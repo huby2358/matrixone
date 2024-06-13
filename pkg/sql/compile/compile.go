@@ -1947,6 +1947,7 @@ func (c *Compile) compileExternScan(ctx context.Context, n *plan.Node) ([]*Scope
 			},
 		}
 		param.JsonData = n.ExternScan.JsonType
+		param.InsertColList = n.ExternScan.InsertColList
 	}
 	if param.ScanType == tree.S3 {
 		if !param.Init {
