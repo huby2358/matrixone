@@ -61,6 +61,8 @@ type container struct {
 	mp *hashmap.JoinMap
 
 	maxAllocSize int64
+	bat          *batch.Batch
+	lastrow      int
 }
 
 type Argument struct {
@@ -71,8 +73,6 @@ type Argument struct {
 	Conditions         [][]*plan.Expr
 	HashOnPK           bool
 	IsShuffle          bool
-	bat                *batch.Batch
-	lastrow            int
 	RuntimeFilterSpecs []*plan.RuntimeFilterSpec
 
 	vm.OperatorBase
@@ -127,11 +127,11 @@ func (arg *Argument) Free(proc *process.Process, pipelineFailed bool, err error)
 
 		arg.ctr = nil
 	}
-	if arg.bat != nil {
-		proc.PutBatch(arg.bat)
-		arg.bat = nil
+	if arg.ctr.bat != nil {
+		proc.PutBatch(arg.ctr.bat)
+		arg.ctr.bat = nil
 	}
-	arg.lastrow = 0
+	arg.ctr.lastrow = 0
 }
 
 func (ctr *container) cleanExprExecutor() {

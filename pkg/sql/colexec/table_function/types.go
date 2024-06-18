@@ -34,15 +34,11 @@ const (
 type Argument struct {
 	ctr *container
 
-	Rets      []*plan.ColDef
-	Args      []*plan.Expr
-	Attrs     []string
-	Params    []byte
-	FuncName  string
-	retSchema []types.Type
-
-	buf            *batch.Batch
-	generateSeries *generateSeriesArg
+	Rets     []*plan.ColDef
+	Args     []*plan.Expr
+	Attrs    []string
+	Params   []byte
+	FuncName string
 
 	vm.OperatorBase
 }
@@ -79,7 +75,10 @@ func (arg *Argument) Release() {
 }
 
 type container struct {
-	state int
+	state          int
+	buf            *batch.Batch
+	retSchema      []types.Type
+	generateSeries *generateSeriesArg
 
 	executorsForArgs []colexec.ExpressionExecutor
 }
@@ -109,10 +108,11 @@ func (arg *Argument) Reset(proc *process.Process, pipelineFailed bool, err error
 func (arg *Argument) Free(proc *process.Process, pipelineFailed bool, err error) {
 	if arg.ctr != nil {
 		arg.ctr.cleanExecutors()
-	}
-	if arg.buf != nil {
-		arg.buf.Clean(proc.Mp())
-		arg.buf = nil
+		if arg.ctr.buf != nil {
+			arg.ctr.buf.Clean(proc.Mp())
+			arg.ctr.buf = nil
+		}
+		arg.ctr = nil
 	}
 }
 
