@@ -15,7 +15,6 @@
 package cnclient
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -78,9 +77,9 @@ func (c *CNClient) NewStream(backend string) (morpc.Stream, error) {
 		return nil, moerr.NewInternalErrorNoCtx("cn client is not ready")
 	}
 
-	if backend == c.localServiceAddress {
-		return nil, moerr.NewInternalErrorNoCtx(fmt.Sprintf("remote run pipeline in local: %s", backend))
-	}
+	// if backend == c.localServiceAddress {
+	// 	return nil, moerr.NewInternalErrorNoCtx(fmt.Sprintf("remote run pipeline in local: %s", backend))
+	// }
 	return c.client.NewStream(backend, true)
 }
 
