@@ -26,6 +26,7 @@ import (
 
 	"github.com/matrixorigin/matrixone/pkg/catalog"
 	"github.com/matrixorigin/matrixone/pkg/common/bitmap"
+	"github.com/matrixorigin/matrixone/pkg/logutil"
 	"github.com/matrixorigin/matrixone/pkg/objectio"
 	"github.com/matrixorigin/matrixone/pkg/pb/timestamp"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/output"
@@ -326,6 +327,9 @@ func (s *Scope) MergeRun(c *Compile) error {
 
 // RemoteRun send the scope to a remote node for execution.
 func (s *Scope) RemoteRun(c *Compile) error {
+	if s.Instructions == nil || len(s.Instructions) == 0 {
+		logutil.Infof("RemoteRun, s.Instructions is nil\n")
+	}
 	if !s.canRemote(c, true) || !cnclient.IsCNClientReady() {
 		return s.ParallelRun(c)
 	}
@@ -882,6 +886,10 @@ func (s *Scope) isRight() bool {
 
 func newParallelScope(c *Compile, s *Scope, ss []*Scope) (*Scope, error) {
 	var flg bool
+
+	if s.Instructions == nil || len(s.Instructions) == 0 {
+		logutil.Infof("newParallelScope, s.Instructions is nil\n")
+	}
 
 	idx := 0
 	defer func(ins vm.Instructions) {
