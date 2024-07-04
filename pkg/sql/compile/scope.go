@@ -1104,6 +1104,8 @@ func newParallelScope(c *Compile, s *Scope, ss []*Scope) (*Scope, error) {
 			}
 			arg.Release()
 		case vm.Output:
+		case vm.Connector:
+		case vm.Dispatch:
 		default:
 			for j := range ss {
 				ss[j].appendInstruction(dupInstruction(&in, nil, j))
@@ -1111,12 +1113,12 @@ func newParallelScope(c *Compile, s *Scope, ss []*Scope) (*Scope, error) {
 		}
 	}
 	if !flg {
-		for i := range ss {
+		/* 		for i := range ss {
 			if arg := ss[i].Instructions[len(ss[i].Instructions)-1].Arg; arg != nil {
 				arg.Release()
 			}
 			ss[i].Instructions = ss[i].Instructions[:len(ss[i].Instructions)-1]
-		}
+		} */
 		if arg := s.Instructions[0].Arg; arg != nil {
 			arg.Release()
 		}
