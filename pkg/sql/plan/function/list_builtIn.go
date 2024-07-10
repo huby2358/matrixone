@@ -3535,7 +3535,6 @@ var supportedDateAndTimeBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				realTimeRelated: true,
-				volatile:        true,
 				retType: func(parameters []types.Type) types.Type {
 					typ := types.T_timestamp.ToType()
 					typ.Scale = 6
@@ -4885,7 +4884,6 @@ var supportedControlBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            []types.T{types.T_varchar},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_int64.ToType()
@@ -4959,9 +4957,8 @@ var supportedOthersBuiltIns = []FuncNew{
 
 		Overloads: []overload{
 			{
-				overloadId:      0,
-				args:            nil,
-				realTimeRelated: true,
+				overloadId: 0,
+				args:       nil,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_timestamp.ToType()
 				},
@@ -4972,6 +4969,7 @@ var supportedOthersBuiltIns = []FuncNew{
 		},
 	},
 
+	// 这个要看一下可以不同列可以指定不同chaset吗(看了mysql的是可以设置列级别的)，但是同一列肯定要charset一样吧
 	// function `charset`
 	{
 		functionId: CHARSET,
@@ -4983,7 +4981,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            []types.T{types.T_varchar},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5006,7 +5003,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            []types.T{types.T_varchar},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5027,9 +5023,8 @@ var supportedOthersBuiltIns = []FuncNew{
 
 		Overloads: []overload{
 			{
-				overloadId:      0,
-				args:            []types.T{},
-				realTimeRelated: true,
+				overloadId: 0,
+				args:       []types.T{},
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_uint64.ToType()
 				},
@@ -5040,6 +5035,7 @@ var supportedOthersBuiltIns = []FuncNew{
 		},
 	},
 
+	//同一个session可以切换account吗
 	// function `current_account_id`
 	{
 		functionId: CURRENT_ACCOUNT_ID,
@@ -5129,6 +5125,7 @@ var supportedOthersBuiltIns = []FuncNew{
 	},
 
 	// function `current_user_id`
+	// user 在同一个session可以切换吗
 	{
 		functionId: CURRENT_USER_ID,
 		class:      plan.Function_STRICT,
@@ -5205,7 +5202,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            nil,
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5248,9 +5244,8 @@ var supportedOthersBuiltIns = []FuncNew{
 
 		Overloads: []overload{
 			{
-				overloadId:      0,
-				args:            nil,
-				realTimeRelated: true,
+				overloadId: 0,
+				args:       nil,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
 				},
@@ -5494,7 +5489,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId: 0,
 				args:       []types.T{},
-				volatile:   true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_uint64.ToType()
 				},
@@ -5517,7 +5511,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            []types.T{},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5529,7 +5522,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      1,
 				args:            []types.T{types.T_int64},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5672,6 +5664,7 @@ var supportedOthersBuiltIns = []FuncNew{
 		},
 	},
 
+	// todo
 	// function `mo_show_visible_bin`
 	{
 		functionId: MO_SHOW_VISIBLE_BIN,
@@ -5808,6 +5801,7 @@ var supportedOthersBuiltIns = []FuncNew{
 		},
 	},
 
+	//todo
 	// function `mo_table_rows`
 	{
 		functionId: MO_TABLE_ROWS,
@@ -5865,7 +5859,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            []types.T{types.T_varchar, types.T_varchar, types.T_varchar},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5888,7 +5881,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            []types.T{types.T_varchar, types.T_varchar, types.T_varchar},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5979,7 +5971,6 @@ var supportedOthersBuiltIns = []FuncNew{
 					types.T_varchar,
 					types.T_varchar,
 				},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5995,7 +5986,6 @@ var supportedOthersBuiltIns = []FuncNew{
 					types.T_varchar,
 					types.T_bool,
 				},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -6017,7 +6007,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            []types.T{types.T_varchar},
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -6039,7 +6028,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            nil,
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -6060,9 +6048,9 @@ var supportedOthersBuiltIns = []FuncNew{
 
 		Overloads: []overload{
 			{
-				overloadId: 0,
-				args:       []types.T{},
-				volatile:   true,
+				overloadId:      0,
+				args:            []types.T{},
+				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
 				},
@@ -6128,9 +6116,8 @@ var supportedOthersBuiltIns = []FuncNew{
 
 		Overloads: []overload{
 			{
-				overloadId:      0,
-				args:            nil,
-				realTimeRelated: true,
+				overloadId: 0,
+				args:       nil,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
 				},
