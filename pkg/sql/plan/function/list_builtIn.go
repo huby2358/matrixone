@@ -3535,7 +3535,6 @@ var supportedDateAndTimeBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				realTimeRelated: true,
-				volatile:        true,
 				retType: func(parameters []types.Type) types.Type {
 					typ := types.T_timestamp.ToType()
 					typ.Scale = 6
@@ -5205,7 +5204,6 @@ var supportedOthersBuiltIns = []FuncNew{
 			{
 				overloadId:      0,
 				args:            nil,
-				volatile:        true,
 				realTimeRelated: true,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
@@ -5248,9 +5246,8 @@ var supportedOthersBuiltIns = []FuncNew{
 
 		Overloads: []overload{
 			{
-				overloadId:      0,
-				args:            nil,
-				realTimeRelated: true,
+				overloadId: 0,
+				args:       nil,
 				retType: func(parameters []types.Type) types.Type {
 					return types.T_varchar.ToType()
 				},
