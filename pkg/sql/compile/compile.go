@@ -1969,6 +1969,10 @@ func (c *Compile) compileExternScan(n *plan.Node) ([]*Scope, error) {
 		param.JsonData = n.ExternScan.JsonType
 	}
 
+	if n.ExternScan != nil {
+		param.TbColToDataCol = n.ExternScan.TbColToDataCol
+	}
+
 	if param.ScanType == tree.S3 {
 		if !param.Init {
 			if err := plan2.InitS3Param(param); err != nil {
