@@ -870,7 +870,7 @@ func checkLineValid(param *ExternalParam, proc *process.Process, line []csvparse
 		}
 		if len(line) != len(param.Extern.TbColToDataCol) {
 			if len(line) != len(param.Extern.TbColToDataCol)+1 {
-				return moerr.NewInvalidInput(proc.Ctx, "the data of row %d contained is not equal to input columns", rowIdx+1)
+				return moerr.NewInvalidInput(proc.Ctx, "the data of row %d contained is not equal to input columns, len of line is %d, len of tbCol is %d", rowIdx+1, len(line), len(param.Extern.TbColToDataCol))
 			}
 			field := line[len(line)-1]
 			if field.Val != "" {
