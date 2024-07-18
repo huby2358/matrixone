@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/matrixorigin/matrixone/pkg/logutil"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/productl2"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/table_scan"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/value_scan"
@@ -787,6 +788,10 @@ func constructExternal(n *plan.Node, param *tree.ExternParam, ctx context.Contex
 		if !col.Hidden {
 			attrs = append(attrs, col.Name)
 		}
+	}
+
+	if len(param.TbColToDataCol) == 0 {
+		logutil.Infof("----666,in constructExternal, tbColToDataCol len is 0")
 	}
 
 	return external.NewArgument().WithEs(
