@@ -868,9 +868,9 @@ func checkLineValid(param *ExternalParam, proc *process.Process, line []csvparse
 			}
 			return nil
 		}
-		if len(line) != len(param.Extern.TbColToDataCol) {
-			if len(line) != len(param.Extern.TbColToDataCol)+1 {
-				return moerr.NewInvalidInput(proc.Ctx, "the data of row %d contained is not equal to input columns, len of line is %d, len of tbCol is %d", rowIdx+1, len(line), len(param.Extern.TbColToDataCol))
+		if len(line) != len(param.TbColToDataCol) {
+			if len(line) != len(param.TbColToDataCol)+1 {
+				return moerr.NewInvalidInput(proc.Ctx, "the data of row %d contained is not equal to input columns", rowIdx+1)
 			}
 			field := line[len(line)-1]
 			if field.Val != "" {
@@ -1322,7 +1322,7 @@ func getFieldFromLine(line []csvparser.Field, colName string, param *ExternalPar
 	if param.Extern.ExtTab {
 		return line[param.Name2ColIndex[colName]]
 	}
-	return line[param.Extern.TbColToDataCol[colName]]
+	return line[param.TbColToDataCol[colName]]
 }
 
 func getOneRowData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *ExternalParam, mp *mpool.MPool) error {

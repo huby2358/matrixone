@@ -1969,10 +1969,6 @@ func (c *Compile) compileExternScan(n *plan.Node) ([]*Scope, error) {
 		param.JsonData = n.ExternScan.JsonType
 	}
 
-	if n.ExternScan != nil {
-		param.TbColToDataCol = n.ExternScan.TbColToDataCol
-	}
-
 	if param.ScanType == tree.S3 {
 		if !param.Init {
 			if err := plan2.InitS3Param(param); err != nil {
@@ -2119,9 +2115,7 @@ func (c *Compile) compileExternScan(n *plan.Node) ([]*Scope, error) {
 				fileOffsetTmp[j].Offset = append(fileOffsetTmp[j].Offset, []int64{0, -1}...)
 			}
 		}
-		if len(param.TbColToDataCol) == 0 {
-			logutil.Infof("----666,in compileExternScan, tbColToDataCol len is 0")
-		}
+
 		op := constructExternal(n, param, c.proc.Ctx, fileList, fileSize, fileOffsetTmp)
 		op.SetIdx(c.anal.curr)
 		op.SetIsFirst(c.anal.isFirst)
@@ -2153,9 +2147,7 @@ func (c *Compile) compileExternValueScan(n *plan.Node, param *tree.ExternParam) 
 		ss[i] = c.constructLoadMergeScope()
 	}
 	s := c.constructScopeForExternal(c.addr, false)
-	if len(param.TbColToDataCol) == 0 {
-		logutil.Infof("----666,in compileExternValueScan, tbColToDataCol len is 0")
-	}
+
 	op := constructExternal(n, param, c.proc.Ctx, nil, nil, nil)
 	op.SetIdx(c.anal.curr)
 	op.SetIsFirst(c.anal.isFirst)
@@ -2182,9 +2174,7 @@ func (c *Compile) compileExternScanParallel(n *plan.Node, param *tree.ExternPara
 		fileOffsetTmp[i].Offset = make([]int64, 0)
 		fileOffsetTmp[i].Offset = append(fileOffsetTmp[i].Offset, []int64{0, -1}...)
 	}
-	if len(param.TbColToDataCol) == 0 {
-		logutil.Infof("----666,in compileExternScanParallel, tbColToDataCol len is 0")
-	}
+
 	extern := constructExternal(n, param, c.proc.Ctx, fileList, fileSize, fileOffsetTmp)
 	extern.Es.ParallelLoad = true
 	scope := c.constructScopeForExternal("", false)

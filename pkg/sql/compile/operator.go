@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/matrixorigin/matrixone/pkg/logutil"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/productl2"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/table_scan"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/value_scan"
@@ -441,6 +440,7 @@ func dupOperator(sourceOp vm.Operator, regMap map[*process.WaitRegister]*process
 					FileSize:        t.Es.FileSize,
 					FileOffsetTotal: t.Es.FileOffsetTotal,
 					Extern:          t.Es.Extern,
+					TbColToDataCol:  t.Es.TbColToDataCol,
 				},
 				ExParam: external.ExParam{
 					Filter: &external.FilterParam{
@@ -790,10 +790,10 @@ func constructExternal(n *plan.Node, param *tree.ExternParam, ctx context.Contex
 		}
 	}
 
-	if len(param.TbColToDataCol) == 0 {
-		logutil.Infof("----666,in constructExternal, tbColToDataCol len is 0")
+	var tbColToDataCol map[string]int32
+	if n.ExternScan != nil {
+		tbColToDataCol = n.ExternScan.TbColToDataCol
 	}
-
 	return external.NewArgument().WithEs(
 		&external.ExternalParam{
 			ExParamConst: external.ExParamConst{
@@ -801,6 +801,7 @@ func constructExternal(n *plan.Node, param *tree.ExternParam, ctx context.Contex
 				Cols:            n.TableDef.Cols,
 				Extern:          param,
 				Name2ColIndex:   n.TableDef.Name2ColIndex,
+				TbColToDataCol:  tbColToDataCol,
 				FileOffsetTotal: fileOffset,
 				CreateSql:       n.TableDef.Createsql,
 				Ctx:             ctx,

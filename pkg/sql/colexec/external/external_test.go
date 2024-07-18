@@ -505,9 +505,9 @@ func Test_getBatchData(t *testing.T) {
 		for i := 0; i < len(attrs); i++ {
 			param.Name2ColIndex[attrs[i]] = int32(i)
 		}
-		param.Extern.TbColToDataCol = make(map[string]int32)
+		param.TbColToDataCol = make(map[string]int32)
 		for i := 0; i < len(attrs); i++ {
-			param.Extern.TbColToDataCol[attrs[i]] = int32(i)
+			param.TbColToDataCol[attrs[i]] = int32(i)
 		}
 		plh := &ParseLineHandler{
 			batchSize:      1,
@@ -542,9 +542,9 @@ func Test_getBatchData(t *testing.T) {
 			tempLine := line[:len(line)-i]
 			tmp := attrs[i:]
 			param.Attrs = tmp
-			param.Extern.TbColToDataCol = make(map[string]int32)
+			param.TbColToDataCol = make(map[string]int32)
 			for i := 0; i < len(tmp); i++ {
-				param.Extern.TbColToDataCol[tmp[i]] = int32(i)
+				param.TbColToDataCol[tmp[i]] = int32(i)
 			}
 			param.Cols = cols[i:]
 			plh.moCsvLineArray = [][]csvparser.Field{buildFields(tempLine)}
@@ -567,9 +567,9 @@ func Test_getBatchData(t *testing.T) {
 		for i := 1; i <= 8; i++ {
 			tmp := attrs[i:]
 			param.Attrs = tmp
-			param.Extern.TbColToDataCol = make(map[string]int32)
+			param.TbColToDataCol = make(map[string]int32)
 			for i := 0; i < len(tmp); i++ {
-				param.Extern.TbColToDataCol[tmp[i]] = int32(i)
+				param.TbColToDataCol[tmp[i]] = int32(i)
 			}
 			param.Cols = cols[i:]
 			plh.moCsvLineArray = [][]csvparser.Field{buildFields(line)}
@@ -581,9 +581,9 @@ func Test_getBatchData(t *testing.T) {
 		param.Extern.Format = tree.JSONLINE
 		param.Extern.JsonData = tree.OBJECT
 		param.Attrs = attrs
-		param.Extern.TbColToDataCol = make(map[string]int32)
+		param.TbColToDataCol = make(map[string]int32)
 		for i := 0; i < len(attrs); i++ {
-			param.Extern.TbColToDataCol[attrs[i]] = int32(i)
+			param.TbColToDataCol[attrs[i]] = int32(i)
 		}
 		param.Cols = cols
 		plh.moCsvLineArray = [][]csvparser.Field{buildFields(jsonline_object)}
