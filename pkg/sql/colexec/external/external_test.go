@@ -60,6 +60,9 @@ var (
 
 func newTestCase(format, jsondata string) externalTestCase {
 	proc := testutil.NewProcess()
+	proc.SetResolveVariableFunc(func(varName string, isSystemVar, isGlobalVar bool) (interface{}, error) {
+		return "STRICT_TRANS_TABLES", nil
+	})
 	proc.Base.FileService = testutil.NewFS()
 	ctx, cancel := context.WithCancel(context.Background())
 	return externalTestCase{
@@ -486,8 +489,9 @@ func Test_getBatchData(t *testing.T) {
 		}
 		param := &ExternalParam{
 			ExParamConst: ExParamConst{
-				Attrs: attrs,
-				Cols:  cols,
+				Attrs:         attrs,
+				Cols:          cols,
+				StrictSqlMode: true,
 				Extern: &tree.ExternParam{
 					ExParamConst: tree.ExParamConst{
 						Tail: &tree.TailParameter{
@@ -515,6 +519,7 @@ func Test_getBatchData(t *testing.T) {
 		}
 
 		proc := testutil.NewProc()
+
 		_, err := getBatchData(param, plh, proc)
 		convey.So(err, convey.ShouldBeNil)
 
