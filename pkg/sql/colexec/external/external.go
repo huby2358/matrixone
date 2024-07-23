@@ -862,6 +862,14 @@ func getRealAttrCnt(attrs []string, cols []*plan.ColDef) int {
 }
 
 func StrictSqlMode(proc *process.Process) (error, bool) {
+	if proc.Base == nil {
+		logutil.Info("----666, StrictSqlMode, pro.base is nil")
+	} else {
+		if proc.GetResolveVariableFunc() == nil {
+			logutil.Info("----666, StrictSqlMode, GetResolveVariableFunc is nil")
+		}
+	}
+
 	mode, err := proc.GetResolveVariableFunc()("sql_mode", true, false)
 	if err != nil {
 		return err, false
