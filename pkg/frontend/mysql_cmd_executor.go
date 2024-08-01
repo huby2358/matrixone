@@ -2422,6 +2422,9 @@ func executeStmtWithWorkspace(ses FeSession,
 	}()
 
 	err = executeStmtWithIncrStmt(ses, execCtx, txnOp)
+	if err != nil {
+		ses.Error(execCtx.reqCtx, err.Error())
+	}
 
 	return
 }

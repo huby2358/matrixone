@@ -178,6 +178,7 @@ func (external *External) Call(proc *process.Process) (vm.CallResult, error) {
 	external.ctr.buf, err = scanFileData(ctx, param, proc)
 	if err != nil {
 		param.Fileparam.End = true
+		logutil.Infof("----666, in external call %s", err.Error())
 		return result, err
 	}
 

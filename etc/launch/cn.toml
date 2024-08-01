@@ -12,3 +12,6 @@ port-base = 18000
 check-fraction = 65536
 enable-metrics = true
 
+[cn.txn]
+enable-leak-check = 1
+max-active-ages = "40s"

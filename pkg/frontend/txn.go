@@ -25,6 +25,7 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/common/mpool"
 	moruntime "github.com/matrixorigin/matrixone/pkg/common/runtime"
 	"github.com/matrixorigin/matrixone/pkg/defines"
+	"github.com/matrixorigin/matrixone/pkg/logutil"
 	"github.com/matrixorigin/matrixone/pkg/pb/metadata"
 	"github.com/matrixorigin/matrixone/pkg/txn/client"
 	"github.com/matrixorigin/matrixone/pkg/txn/clock"
@@ -115,6 +116,11 @@ func finishTxnFunc(ses FeSession, execErr error, execCtx *ExecCtx) (err error) {
 			return err
 		}
 	} else {
+		if execErr != nil {
+			logutil.Info("----666,finishTxnFunc,  begin error")
+			ses.Error(execCtx.reqCtx, execErr.Error())
+		}
+
 		if execErr == nil {
 			err = commitTxnFunc(ses, execCtx)
 			if err == nil {
@@ -122,6 +128,8 @@ func finishTxnFunc(ses FeSession, execErr error, execCtx *ExecCtx) (err error) {
 			}
 			// if commitTxnFunc failed, we will roll back the transaction.
 			execErr = err
+			logutil.Info("----666,finishTxnFunc, commitTxnFunc error")
+			ses.Error(execCtx.reqCtx, execErr.Error())
 		}
 
 		return rollbackTxnFunc(ses, execErr, execCtx)

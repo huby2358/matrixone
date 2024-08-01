@@ -21,6 +21,7 @@ import (
 
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
 	"github.com/matrixorigin/matrixone/pkg/common/morpc"
+	"github.com/matrixorigin/matrixone/pkg/logutil"
 	pb "github.com/matrixorigin/matrixone/pkg/pb/query"
 	"github.com/matrixorigin/matrixone/pkg/queryservice/client"
 	"github.com/pkg/errors"
@@ -192,6 +193,7 @@ func RequestMultipleCn(ctx context.Context,
 				}
 			}
 		case <-ctx.Done():
+			logutil.Info("----666, RequestMultipleCn")
 			retErr = moerr.NewInternalError(ctx, "context deadline exceeded")
 		}
 		nodesLeft--

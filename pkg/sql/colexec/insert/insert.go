@@ -22,6 +22,7 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/catalog"
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
 	"github.com/matrixorigin/matrixone/pkg/container/types"
+	"github.com/matrixorigin/matrixone/pkg/logutil"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec"
 	v2 "github.com/matrixorigin/matrixone/pkg/util/metric/v2"
 	"github.com/matrixorigin/matrixone/pkg/vm"
@@ -88,9 +89,17 @@ func (insert *Insert) Call(proc *process.Process) (vm.CallResult, error) {
 	}()
 
 	if insert.ToWriteS3 {
-		return insert.insert_s3(proc, anal)
+		res, err := insert.insert_s3(proc, anal)
+		if err != nil {
+			logutil.Infof("----666, in insert call, insert_s3 %s", err.Error())
+		}
+		return res, err
 	}
-	return insert.insert_table(proc, anal)
+	res, err := insert.insert_table(proc, anal)
+	if err != nil {
+		logutil.Infof("----666, in insert call, insert_table, %s", err.Error())
+	}
+	return res, err
 }
 
 func (insert *Insert) insert_s3(proc *process.Process, anal process.Analyze) (vm.CallResult, error) {
