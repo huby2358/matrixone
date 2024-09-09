@@ -97,6 +97,12 @@ func (r *ConstantFold) Apply(n *plan.Node, _ *plan.Query, proc *process.Process)
 		orderBy.Expr = r.constantFold(orderBy.Expr, proc)
 	}
 
+	for _, col := range n.RowsetData.Cols {
+		for _, rowsetExpr := range col.Data {
+			rowsetExpr.Expr = r.constantFold(rowsetExpr.Expr, proc)
+		}
+	}
+
 	// for i := range n.TblFuncExprList {
 	// 	n.TblFuncExprList[i] = r.constantFold(n.TblFuncExprList[i], proc)
 	// }
