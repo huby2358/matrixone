@@ -1113,7 +1113,6 @@ func createPrepareStmt(
 		PrepareStmt:         saveStmt,
 		getFromSendLongData: make(map[int]struct{}),
 	}
-	prepareStmt.InsertBat = ses.GetTxnCompileCtx().GetProcess().GetPrepareBatch()
 
 	dcPrepare, ok := preparePlan.GetDcl().Control.(*plan.DataControl_Prepare)
 	if ok {
@@ -1908,24 +1907,24 @@ func buildPlan(reqCtx context.Context, ses FeSession, ctx plan2.CompilerContext,
 			isPrepareStmt = prefix == "execute " || prefix == "prepare "
 		}
 	}
-	if s, ok := stmt.(*tree.Insert); ok {
-		if _, ok := s.Rows.Select.(*tree.ValuesClause); ok {
-			ret, err = plan2.BuildPlan(ctx, stmt, isPrepareStmt)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	if ret != nil {
-		ret.IsPrepare = isPrepareStmt
-		if ses != nil && ses.GetTenantInfo() != nil && !ses.IsBackgroundSession() {
-			err = authenticateCanExecuteStatementAndPlan(reqCtx, ses.(*Session), stmt, ret)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return ret, err
-	}
+	/* 	if s, ok := stmt.(*tree.Insert); ok {
+	   		if _, ok := s.Rows.Select.(*tree.ValuesClause); ok {
+	   			ret, err = plan2.BuildPlan(ctx, stmt, isPrepareStmt)
+	   			if err != nil {
+	   				return nil, err
+	   			}
+	   		}
+	   	}
+	   	if ret != nil {
+	   		ret.IsPrepare = isPrepareStmt
+	   		if ses != nil && ses.GetTenantInfo() != nil && !ses.IsBackgroundSession() {
+	   			err = authenticateCanExecuteStatementAndPlan(reqCtx, ses.(*Session), stmt, ret)
+	   			if err != nil {
+	   				return nil, err
+	   			}
+	   		}
+	   		return ret, err
+	   	} */
 	switch stmt := stmt.(type) {
 	case *tree.Select, *tree.ParenSelect, *tree.ValuesStatement,
 		*tree.Update, *tree.Delete, *tree.Insert,
@@ -2759,7 +2758,6 @@ func doComQuery(ses *Session, execCtx *ExecCtx, input *UserInput) (retErr error)
 	proc := ses.proc
 	proc.ReplaceTopCtx(execCtx.reqCtx)
 
-	proc.CopyValueScanBatch(ses.proc)
 	proc.Base.Id = ses.getNextProcessId()
 	proc.Base.Lim.Size = getGlobalPu().SV.ProcessLimitationSize
 	proc.Base.Lim.BatchRows = getGlobalPu().SV.ProcessLimitationBatchRows
