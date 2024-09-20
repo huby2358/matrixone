@@ -22,7 +22,9 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/catalog"
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
 	"github.com/matrixorigin/matrixone/pkg/config"
+	"github.com/matrixorigin/matrixone/pkg/container/batch"
 	"github.com/matrixorigin/matrixone/pkg/container/types"
+	"github.com/matrixorigin/matrixone/pkg/container/vector"
 	"github.com/matrixorigin/matrixone/pkg/defines"
 	"github.com/matrixorigin/matrixone/pkg/pb/plan"
 	"github.com/matrixorigin/matrixone/pkg/sql/parsers/tree"
@@ -971,6 +973,7 @@ func buildValueScan(
 ) error {
 	var err error
 
+	proc := builder.compCtx.GetProcess()
 	lastTag := builder.genNewTag()
 	colCount := len(updateColumns)
 	rowsetData := &plan.RowsetData{
@@ -985,10 +988,13 @@ func buildValueScan(
 		Cols:  make([]*plan.ColDef, colCount),
 	}
 	projectList := make([]*Expr, colCount)
+	bat := batch.NewWithSize(len(updateColumns))
 
 	for i, colName := range updateColumns {
 		col := tableDef.Cols[colToIdx[colName]]
 		colTyp := makeTypeByPlan2Type(col.Typ)
+		vec := vector.NewVec(colTyp)
+		bat.Vecs[i] = vec
 		targetTyp := &plan.Expr{
 			Typ: col.Typ,
 			Expr: &plan.Expr_T{
@@ -1005,29 +1011,70 @@ func buildValueScan(
 			if err != nil {
 				return err
 			}
-			rowsetData.Cols[i].Data = make([]*plan.RowsetExpr, len(slt.Rows))
 			for j := range slt.Rows {
-				rowsetData.Cols[i].Data[j] = &plan.RowsetExpr{
-					Expr: defExpr,
+				if err := vector.AppendBytes(vec, nil, true, proc.Mp()); err != nil {
+					bat.Clean(proc.Mp())
+					return err
 				}
+				rowsetData.Cols[i].Data = append(rowsetData.Cols[i].Data, &plan.RowsetExpr{
+					Pos:    -1,
+					RowPos: int32(j),
+					Expr:   defExpr,
+				})
 			}
 		} else {
 			binder := NewDefaultBinder(builder.GetContext(), nil, nil, col.Typ, nil)
 			binder.builder = builder
-			for _, r := range slt.Rows {
+			for j, r := range slt.Rows {
+				if nv, ok := r[i].(*tree.NumVal); ok {
+					canInsert, err := util.SetInsertValue(proc, nv, vec)
+					if err != nil {
+						bat.Clean(proc.Mp())
+						return err
+					}
+					if canInsert {
+						continue
+					}
+				}
+
+				if err := vector.AppendBytes(vec, nil, true, proc.Mp()); err != nil {
+					bat.Clean(proc.Mp())
+					return err
+				}
 				if _, ok := r[i].(*tree.DefaultVal); ok {
 					defExpr, err = getDefaultExpr(builder.GetContext(), col)
 					if err != nil {
+						bat.Clean(proc.Mp())
 						return err
 					}
+				} else if nv, ok := r[i].(*tree.ParamExpr); ok {
+					if !builder.isPrepareStatement {
+						bat.Clean(proc.Mp())
+						return moerr.NewInvalidInput(builder.GetContext(), "only prepare statement can use ? expr")
+					}
+					rowsetData.Cols[i].Data = append(rowsetData.Cols[i].Data, &plan.RowsetExpr{
+						RowPos: int32(j),
+						Pos:    int32(nv.Offset),
+						Expr: &plan.Expr{
+							Typ: constTextType,
+							Expr: &plan.Expr_P{
+								P: &plan.ParamRef{
+									Pos: int32(nv.Offset),
+								},
+							},
+						},
+					})
+					continue
 				} else {
 					defExpr, err = binder.BindExpr(r[i], 0, true)
 					if err != nil {
+						bat.Clean(proc.Mp())
 						return err
 					}
 					if col.Typ.Id == int32(types.T_enum) {
 						defExpr, err = funcCastForEnumType(builder.GetContext(), defExpr, col.Typ)
 						if err != nil {
+							bat.Clean(proc.Mp())
 							return err
 						}
 					}
@@ -1036,8 +1083,22 @@ func buildValueScan(
 				if err != nil {
 					return err
 				}
+				if nv, ok := r[i].(*tree.ParamExpr); ok {
+					if !builder.isPrepareStatement {
+						bat.Clean(proc.Mp())
+						return moerr.NewInvalidInput(builder.GetContext(), "only prepare statement can use ? expr")
+					}
+					rowsetData.Cols[i].Data = append(rowsetData.Cols[i].Data, &plan.RowsetExpr{
+						RowPos: int32(j),
+						Pos:    int32(nv.Offset),
+						Expr:   defExpr,
+					})
+					continue
+				}
 				rowsetData.Cols[i].Data = append(rowsetData.Cols[i].Data, &plan.RowsetExpr{
-					Expr: defExpr,
+					Pos:    -1,
+					RowPos: int32(j),
+					Expr:   defExpr,
 				})
 			}
 		}
@@ -1099,6 +1160,7 @@ func buildValueScan(
 			}
 		}
 	}
+	bat.SetRowCount(len(slt.Rows))
 	rowsetData.RowCount = int32(len(slt.Rows))
 	nodeId, _ := uuid.NewV7()
 	scanNode := &plan.Node{
@@ -1109,6 +1171,8 @@ func buildValueScan(
 		Uuid:          nodeId[:],
 		OnUpdateExprs: onUpdateExprs,
 	}
+
+	proc.SetValueScanBatch(nodeId, bat)
 
 	info.rootId = builder.appendNode(scanNode, bindCtx)
 	if err = builder.addBinding(info.rootId, tree.AliasClause{Alias: "_valuescan"}, bindCtx); err != nil {

@@ -22,7 +22,6 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/container/vector"
 	plan2 "github.com/matrixorigin/matrixone/pkg/pb/plan"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec"
-	"github.com/matrixorigin/matrixone/pkg/sql/plan"
 	"github.com/matrixorigin/matrixone/pkg/vm"
 	"github.com/matrixorigin/matrixone/pkg/vm/process"
 )
@@ -38,21 +37,18 @@ func (valueScan *ValueScan) OpType() vm.OpType {
 	return vm.ValueScan
 }
 
-func evalRowsetData(proc *process.Process, vec *vector.Vector, exprExecs []colexec.ExpressionExecutor,
+func evalRowsetData(proc *process.Process, exprs []*plan2.RowsetExpr, vec *vector.Vector, exprExecs []colexec.ExpressionExecutor,
 ) error {
 	var bats []*batch.Batch
 
 	vec.ResetArea()
 	bats = []*batch.Batch{batch.EmptyForConstFoldBatch}
 	for i, expr := range exprExecs {
-		if err := vector.AppendBytes(vec, nil, true, proc.Mp()); err != nil {
-			return err
-		}
 		val, err := expr.Eval(proc, bats, nil)
 		if err != nil {
 			return err
 		}
-		if err := vec.Copy(val, int64(i), 0, proc.Mp()); err != nil {
+		if err := vec.Copy(val, int64(exprs[i].RowPos), 0, proc.Mp()); err != nil {
 			return err
 		}
 	}
@@ -83,7 +79,7 @@ func (valueScan *ValueScan) makeValueScanBatch(proc *process.Process) (err error
 	for i := 0; i < valueScan.ColCount; i++ {
 		exprList = valueScan.ExprExecList[i]
 		vec := bat.Vecs[i]
-		if err := evalRowsetData(proc, vec, exprList); err != nil {
+		if err := evalRowsetData(proc, valueScan.RowsetData.Cols[i].Data, vec, exprList); err != nil {
 			return err
 		}
 	}
@@ -94,8 +90,6 @@ func (valueScan *ValueScan) makeValueScanBatch(proc *process.Process) (err error
 func (valueScan *ValueScan) InitExprExecList(proc *process.Process) error {
 	exprExecList := make([][]colexec.ExpressionExecutor, len(valueScan.RowsetData.Cols))
 	for i, col := range valueScan.RowsetData.Cols {
-		vec := vector.NewVec(plan.MakeTypeByPlan2Expr(col.Data[0].Expr))
-		valueScan.Batchs[0].Vecs[i] = vec
 		exprExecList[i] = make([]colexec.ExpressionExecutor, 0, len(col.Data))
 		for _, data := range col.Data {
 			exprExecutor, err := colexec.NewExpressionExecutor(proc, data.Expr)

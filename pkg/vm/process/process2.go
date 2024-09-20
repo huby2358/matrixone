@@ -79,7 +79,8 @@ func NewTopProcess(
 		UdfService:  udfService,
 
 		// 2. fields from make.
-		LastInsertID: new(uint64),
+		LastInsertID:   new(uint64),
+		valueScanBatch: make(map[[16]byte]*batch.Batch),
 
 		// 3. other fields.
 		logger:   util.GetLogger(sid),

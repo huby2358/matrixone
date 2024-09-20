@@ -1857,7 +1857,7 @@ func constructTableScan(n *plan.Node) *table_scan.TableScan {
 	return table_scan.NewArgument().WithTypes(types)
 }
 
-func constructValueScan(n *plan.Node) (*value_scan.ValueScan, error) {
+func constructValueScan(proc *process.Process, n *plan.Node) (*value_scan.ValueScan, error) {
 	op := value_scan.NewArgument()
 	if n == nil {
 		return op, nil
@@ -1866,11 +1866,12 @@ func constructValueScan(n *plan.Node) (*value_scan.ValueScan, error) {
 	if n.RowsetData == nil {
 		return op, nil
 	}
+	bat := proc.GetValueScanBatch(uuid.UUID(n.Uuid))
+	proc.SetValueScanBatch(uuid.UUID(n.Uuid), nil)
 	op.RowsetData = n.RowsetData
 	op.ColCount = len(n.TableDef.Cols)
 	op.Batchs = make([]*batch.Batch, 2)
-	op.Batchs[0] = batch.NewWithSize(len(n.RowsetData.Cols))
-	op.Batchs[0].SetRowCount(len(n.RowsetData.Cols[0].Data))
+	op.Batchs[0] = bat
 	return op, nil
 }
 

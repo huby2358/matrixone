@@ -1498,7 +1498,7 @@ func (c *Compile) compileExternScan(n *plan.Node) ([]*Scope, error) {
 		ret.DataSource = &Source{isConst: true, node: n}
 
 		currentFirstFlag := c.anal.isFirst
-		op, err := constructValueScan(nil)
+		op, err := constructValueScan(c.proc, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1674,9 +1674,12 @@ func (c *Compile) compileValueScan(n *plan.Node) ([]*Scope, error) {
 	ds.Proc = c.proc.NewNoContextChildProc(0)
 
 	currentFirstFlag := c.anal.isFirst
-	op, err := constructValueScan(n)
+	op, err := constructValueScan(c.proc, n)
 	if err != nil {
 		return nil, err
+	}
+	if c.sql == "insert into t1 values(1, 2)" {
+		op.Debug = true
 	}
 	op.SetAnalyzeControl(c.anal.curNodeIdx, currentFirstFlag)
 	ds.setRootOperator(op)

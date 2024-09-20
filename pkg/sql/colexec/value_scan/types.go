@@ -37,6 +37,7 @@ type ValueScan struct {
 	NodeType     plan2.Node_NodeType
 	ExprExecList [][]colexec.ExpressionExecutor
 	RowsetData   *plan.RowsetData
+	Debug        bool
 
 	vm.OperatorBase
 	colexec.Projection

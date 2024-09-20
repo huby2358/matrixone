@@ -291,6 +291,7 @@ type BaseProcess struct {
 	logger              *log.MOLogger
 	TxnOperator         client.TxnOperator
 	CloneTxnOperator    client.TxnOperator
+	valueScanBatch      map[[16]byte]*batch.Batch
 }
 
 // Process contains context used in query execution
@@ -335,6 +336,14 @@ func (proc *Process) SetMessageBoard(mb *message.MessageBoard) {
 
 func (proc *Process) SetStmtProfile(sp *StmtProfile) {
 	proc.Base.StmtProfile = sp
+}
+
+func (proc *Process) SetValueScanBatch(key uuid.UUID, batch *batch.Batch) {
+	proc.Base.valueScanBatch[key] = batch
+}
+
+func (proc *Process) GetValueScanBatch(key uuid.UUID) *batch.Batch {
+	return proc.Base.valueScanBatch[key]
 }
 
 func (proc *Process) GetStmtProfile() *StmtProfile {
