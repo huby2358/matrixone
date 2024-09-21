@@ -31,12 +31,12 @@ type container struct {
 }
 
 type ValueScan struct {
-	ctr          container
-	Batchs       []*batch.Batch
-	ColCount     int
-	NodeType     plan2.Node_NodeType
-	ExprExecList [][]colexec.ExpressionExecutor
-	RowsetData   *plan.RowsetData
+	ctr           container
+	Batchs        []*batch.Batch
+	ColCount      int
+	NodeType      plan2.Node_NodeType
+	ExprExecLists [][]colexec.ExpressionExecutor
+	RowsetData    *plan.RowsetData
 
 	vm.OperatorBase
 	colexec.Projection
@@ -80,8 +80,8 @@ func (valueScan *ValueScan) Reset(proc *process.Process, pipelineFailed bool, er
 	}
 
 	for i := 0; i < valueScan.ColCount; i++ {
-		exprExecs := valueScan.ExprExecList[i]
-		for _, expr := range exprExecs {
+		exprExecList := valueScan.ExprExecLists[i]
+		for _, expr := range exprExecList {
 			expr.ResetForNextQuery()
 		}
 	}
@@ -94,12 +94,12 @@ func (valueScan *ValueScan) Free(proc *process.Process, pipelineFailed bool, err
 		valueScan.cleanBatchs(proc)
 	}
 
-	for i := range valueScan.ExprExecList {
-		exprExecs := valueScan.ExprExecList[i]
-		for i, expr := range exprExecs {
+	for i := range valueScan.ExprExecLists {
+		exprExecList := valueScan.ExprExecLists[i]
+		for i, expr := range exprExecList {
 			if expr != nil {
 				expr.Free()
-				exprExecs[i] = nil
+				exprExecList[i] = nil
 			}
 		}
 	}

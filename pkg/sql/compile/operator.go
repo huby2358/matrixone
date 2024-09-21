@@ -42,6 +42,7 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
 	"github.com/matrixorigin/matrixone/pkg/container/types"
+	"github.com/matrixorigin/matrixone/pkg/container/vector"
 	"github.com/matrixorigin/matrixone/pkg/defines"
 	"github.com/matrixorigin/matrixone/pkg/pb/pipeline"
 	"github.com/matrixorigin/matrixone/pkg/pb/plan"
@@ -97,6 +98,7 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/sql/parsers/tree"
 	plan2 "github.com/matrixorigin/matrixone/pkg/sql/plan"
 	"github.com/matrixorigin/matrixone/pkg/sql/plan/function"
+	"github.com/matrixorigin/matrixone/pkg/sql/plan/rule"
 	"github.com/matrixorigin/matrixone/pkg/vm"
 	"github.com/matrixorigin/matrixone/pkg/vm/engine"
 	"github.com/matrixorigin/matrixone/pkg/vm/process"
@@ -1857,7 +1859,7 @@ func constructTableScan(n *plan.Node) *table_scan.TableScan {
 	return table_scan.NewArgument().WithTypes(types)
 }
 
-func constructValueScan(n *plan.Node) (*value_scan.ValueScan, error) {
+func constructValueScan(proc *process.Process, n *plan.Node) (*value_scan.ValueScan, error) {
 	op := value_scan.NewArgument()
 	if n == nil {
 		return op, nil
@@ -1866,11 +1868,41 @@ func constructValueScan(n *plan.Node) (*value_scan.ValueScan, error) {
 	if n.RowsetData == nil {
 		return op, nil
 	}
-	op.RowsetData = n.RowsetData
+
 	op.ColCount = len(n.TableDef.Cols)
 	op.Batchs = make([]*batch.Batch, 2)
 	op.Batchs[0] = batch.NewWithSize(len(n.RowsetData.Cols))
 	op.Batchs[0].SetRowCount(len(n.RowsetData.Cols[0].Data))
+	rowsetData := &plan.RowsetData{
+		Cols: make([]*plan.ColData, op.ColCount),
+	}
+	for i := 0; i < op.ColCount; i++ {
+		rowsetData.Cols[i] = new(plan.ColData)
+	}
+
+	var err error
+	for i, col := range n.RowsetData.Cols {
+		vec := vector.NewVec(plan2.MakeTypeByPlan2Expr(col.Data[0].Expr))
+		op.Batchs[0].Vecs[i] = vec
+		for j, rowsetExpr := range col.Data {
+			rowsetExpr.Expr, err = plan2.ConstantFold(batch.EmptyForConstFoldBatch, rowsetExpr.Expr, proc, true, true)
+			if err != nil {
+				op.Batchs[0].Clean(proc.Mp())
+				return nil, err
+			}
+			get, err := rule.GetConstantValue2(proc, rowsetExpr.Expr, vec)
+			if err != nil {
+				op.Batchs[0].Clean(proc.Mp())
+				return nil, err
+			}
+			if !get {
+				rowsetExpr.RowPos = int32(j)
+				rowsetData.Cols[i].Data = append(rowsetData.Cols[i].Data, rowsetExpr)
+			}
+		}
+	}
+	op.RowsetData = rowsetData
+
 	return op, nil
 }
 

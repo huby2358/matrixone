@@ -1907,24 +1907,24 @@ func buildPlan(reqCtx context.Context, ses FeSession, ctx plan2.CompilerContext,
 			isPrepareStmt = prefix == "execute " || prefix == "prepare "
 		}
 	}
-	if s, ok := stmt.(*tree.Insert); ok {
-		if _, ok := s.Rows.Select.(*tree.ValuesClause); ok {
-			ret, err = plan2.BuildPlan(ctx, stmt, isPrepareStmt)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	if ret != nil {
-		ret.IsPrepare = isPrepareStmt
-		if ses != nil && ses.GetTenantInfo() != nil && !ses.IsBackgroundSession() {
-			err = authenticateCanExecuteStatementAndPlan(reqCtx, ses.(*Session), stmt, ret)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return ret, err
-	}
+	/* 	if s, ok := stmt.(*tree.Insert); ok {
+	   		if _, ok := s.Rows.Select.(*tree.ValuesClause); ok {
+	   			ret, err = plan2.BuildPlan(ctx, stmt, isPrepareStmt)
+	   			if err != nil {
+	   				return nil, err
+	   			}
+	   		}
+	   	}
+	   	if ret != nil {
+	   		ret.IsPrepare = isPrepareStmt
+	   		if ses != nil && ses.GetTenantInfo() != nil && !ses.IsBackgroundSession() {
+	   			err = authenticateCanExecuteStatementAndPlan(reqCtx, ses.(*Session), stmt, ret)
+	   			if err != nil {
+	   				return nil, err
+	   			}
+	   		}
+	   		return ret, err
+	   	} */
 	switch stmt := stmt.(type) {
 	case *tree.Select, *tree.ParenSelect, *tree.ValuesStatement,
 		*tree.Update, *tree.Delete, *tree.Insert,

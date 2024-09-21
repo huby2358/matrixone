@@ -526,7 +526,8 @@ message Stats {
 }
 
 message RowsetExpr {
-	Expr expr = 1;
+    int32 row_pos = 1;
+	Expr expr = 2;
 }
 
 message ColData {
