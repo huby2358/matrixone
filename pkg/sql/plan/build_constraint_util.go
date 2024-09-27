@@ -1015,6 +1015,16 @@ func buildValueScan(
 			binder := NewDefaultBinder(builder.GetContext(), nil, nil, col.Typ, nil)
 			binder.builder = builder
 			for _, r := range slt.Rows {
+				if nv, ok := r[i].(*tree.NumVal); ok {
+					canInsert, err := util.SetInsertValue(proc, nv, colTyp)
+					if err != nil {
+						return err
+					}
+					if canInsert {
+						continue
+					}
+				}
+
 				if _, ok := r[i].(*tree.DefaultVal); ok {
 					defExpr, err = getDefaultExpr(builder.GetContext(), col)
 					if err != nil {

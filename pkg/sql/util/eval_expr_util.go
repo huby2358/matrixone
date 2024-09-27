@@ -260,10 +260,10 @@ func SetBytesToAnyVector(ctx context.Context, val string, row int,
 	}
 }
 
-func SetInsertValue(proc *process.Process, numVal *tree.NumVal, vec *vector.Vector) (bool, error) {
-	switch vec.GetType().Oid {
+func SetInsertValue(proc *process.Process, numVal *tree.NumVal, colType types.Type) (bool, error) {
+	switch colType.Oid {
 	case types.T_bool:
-		return setInsertValueBool(proc, numVal, vec)
+		return setInsertValueBool(proc, numVal)
 	case types.T_bit:
 		return setInsertValueBit(proc, numVal, vec)
 	case types.T_int8:
@@ -607,29 +607,27 @@ func setInsertValueUuid(proc *process.Process, numVal *tree.NumVal, vec *vector.
 	return
 }
 
-func setInsertValueBool(proc *process.Process, numVal *tree.NumVal, vec *vector.Vector) (canInsert bool, err error) {
+func setInsertValueBool(proc *process.Process, numVal *tree.NumVal) (canInsert bool, err error) {
 	canInsert = true
 	switch numVal.ValType {
 	case tree.P_null:
-		err = vector.AppendBytes(vec, nil, true, proc.Mp())
 
 	case tree.P_bool:
 		val := numVal.Bool()
-		err = vector.AppendFixed[bool](vec, val, false, proc.Mp())
 
 	case tree.P_int64:
 		val, ok := numVal.Int64()
 		if !ok {
 			return false, moerr.NewInvalidInputf(proc.Ctx, "invalid int value '%s'", numVal.String())
 		}
-		err = vector.AppendFixed[bool](vec, val == 1, false, proc.Mp())
+		val == 1
 
 	case tree.P_uint64:
 		val, ok := numVal.Uint64()
 		if !ok {
 			return false, moerr.NewInvalidInputf(proc.Ctx, "invalid uint value '%s'", numVal.String())
 		}
-		err = vector.AppendFixed[bool](vec, val == 1, false, proc.Mp())
+		val == 1
 
 	case tree.P_decimal:
 		canInsert = false
@@ -644,12 +642,13 @@ func setInsertValueBool(proc *process.Process, numVal *tree.NumVal, vec *vector.
 	case tree.P_char:
 		originStr := numVal.String()
 		if len(originStr) == 4 && strings.ToLower(originStr) == "true" {
-			err = vector.AppendFixed[bool](vec, true, false, proc.Mp())
+			var := true
 		} else {
-			err = vector.AppendFixed[bool](vec, false, false, proc.Mp())
+			var := false
 		}
 
 	case tree.P_nulltext:
+		
 		err = vector.AppendBytes(vec, nil, true, proc.Mp())
 	default:
 		canInsert = false
@@ -814,20 +813,16 @@ func checkOverFlow[T1, T2 constraints.Integer | constraints.Float](ctx context.C
 	return nil
 }
 
-func setInsertValueNumber[T constraints.Integer | constraints.Float](proc *process.Process, numVal *tree.NumVal, vec *vector.Vector) (canInsert bool, err error) {
+func setInsertValueNumber[T constraints.Integer | constraints.Float](proc *process.Process, numVal *tree.NumVal) (canInsert bool, num T, err error) {
 	canInsert = true
 	switch numVal.ValType {
-	case tree.P_null:
-		err = vector.AppendBytes(vec, nil, true, proc.Mp())
-
 	case tree.P_bool:
 		val := numVal.Bool()
 		if val {
-			err = vector.AppendFixed(vec, T(1), false, proc.Mp())
+			num = T(1)
 		} else {
-			err = vector.AppendFixed(vec, T(0), false, proc.Mp())
+			num = T(0)
 		}
-		vec.GetType()
 
 	case tree.P_int64:
 		val, ok := numVal.Int64()
@@ -838,7 +833,7 @@ func setInsertValueNumber[T constraints.Integer | constraints.Float](proc *proce
 		if err != nil {
 			return false, err
 		}
-		err = vector.AppendFixed(vec, T(val), false, proc.Mp())
+		num = T(val)
 
 	case tree.P_uint64:
 		val, ok := numVal.Uint64()
