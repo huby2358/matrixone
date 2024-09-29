@@ -1880,16 +1880,10 @@ func constructValueScan(proc *process.Process, n *plan.Node) (*value_scan.ValueS
 		rowsetData.Cols[i] = new(plan.ColData)
 	}
 
-	var err error
 	for i, col := range n.RowsetData.Cols {
-		vec := vector.NewVec(plan2.MakeTypeByPlan2Expr(col.Data[0].Expr))
+		vec := vector.NewVec(plan2.MakeTypeByPlan2Type(n.TableDef.Cols[i].Typ))
 		op.Batchs[0].Vecs[i] = vec
 		for j, rowsetExpr := range col.Data {
-			rowsetExpr.Expr, err = plan2.ConstantFold(batch.EmptyForConstFoldBatch, rowsetExpr.Expr, proc, true, true)
-			if err != nil {
-				op.Batchs[0].Clean(proc.Mp())
-				return nil, err
-			}
 			get, err := rule.GetConstantValue2(proc, rowsetExpr.Expr, vec)
 			if err != nil {
 				op.Batchs[0].Clean(proc.Mp())

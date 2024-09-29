@@ -28,6 +28,7 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/sql/parsers/tree"
 	"github.com/matrixorigin/matrixone/pkg/sql/plan/function"
 	"github.com/matrixorigin/matrixone/pkg/sql/util"
+	"github.com/matrixorigin/matrixone/pkg/vm/process"
 )
 
 const (
@@ -958,6 +959,85 @@ func forceCastExpr(ctx context.Context, expr *Expr, targetType Type) (*Expr, err
 	}, nil
 }
 
+func MakeInsertValueExpr(proc *process.Process, numVal *tree.NumVal, colType *types.Type) (bool, *plan.Expr, error) {
+	if numVal.ValType == tree.P_null || numVal.ValType == tree.P_nulltext {
+		return true, makePlan2NullConstExprWithType(), nil
+	}
+	switch colType.Oid {
+	case types.T_bool:
+		canInsert, num, err := util.SetInsertValueBool(proc, numVal)
+		return canInsert, MakePlan2BoolConstExprWithType(num), err
+
+	case types.T_bit:
+		canInsert, num, err := util.SetInsertValueBit(proc, numVal, colType)
+		return canInsert, MakePlan2Uint64ConstExprWithType(num), err
+	case types.T_int8:
+		canInsert, num, err := util.SetInsertValueNumber[int8](proc, numVal, colType)
+		return canInsert, MakePlan2Int8ConstExprWithType(num), err
+	case types.T_int16:
+		canInsert, num, err := util.SetInsertValueNumber[int16](proc, numVal, colType)
+		return canInsert, MakePlan2Int16ConstExprWithType(num), err
+	case types.T_int32:
+		canInsert, num, err := util.SetInsertValueNumber[int32](proc, numVal, colType)
+		return canInsert, MakePlan2Int32ConstExprWithType(num), err
+	case types.T_int64:
+		canInsert, num, err := util.SetInsertValueNumber[int64](proc, numVal, colType)
+		return canInsert, MakePlan2Int64ConstExprWithType(num), err
+	case types.T_uint8:
+		canInsert, num, err := util.SetInsertValueNumber[uint8](proc, numVal, colType)
+		return canInsert, MakePlan2Uint8ConstExprWithType(num), err
+	case types.T_uint16:
+		canInsert, num, err := util.SetInsertValueNumber[uint16](proc, numVal, colType)
+		return canInsert, MakePlan2Uint16ConstExprWithType(num), err
+	case types.T_uint32:
+		canInsert, num, err := util.SetInsertValueNumber[uint32](proc, numVal, colType)
+		return canInsert, MakePlan2Uint32ConstExprWithType(num), err
+	case types.T_uint64:
+		canInsert, num, err := util.SetInsertValueNumber[uint64](proc, numVal, colType)
+		return canInsert, MakePlan2Uint64ConstExprWithType(num), err
+	case types.T_float32:
+		canInsert, num, err := util.SetInsertValueNumber[float32](proc, numVal, colType)
+		return canInsert, MakePlan2Float32ConstExprWithType(num), err
+	case types.T_float64:
+		canInsert, num, err := util.SetInsertValueNumber[float64](proc, numVal, colType)
+		return canInsert, MakePlan2Float64ConstExprWithType(num), err
+	case types.T_decimal64:
+		canInsert, num, err := util.SetInsertValueDecimal64(proc, numVal, colType)
+		planType := MakePlan2TypeValue(colType)
+		return canInsert, MakePlan2Decimal64ExprWithType(num, &planType), err
+	case types.T_decimal128:
+		canInsert, num, err := util.SetInsertValueDecimal128(proc, numVal, colType)
+		planType := MakePlan2TypeValue(colType)
+		return canInsert, MakePlan2Decimal128ExprWithType(num, &planType), err
+	case types.T_char, types.T_varchar, types.T_blob, types.T_binary, types.T_varbinary, types.T_text, types.T_datalink,
+		types.T_array_float32, types.T_array_float64:
+		canInsert, num, err := util.SetInsertValueString(proc, numVal, colType)
+		return canInsert, MakePlan2StringConstExprWithType(string(num)), err
+	case types.T_json:
+		canInsert, num, err := util.SetInsertValueJSON(proc, numVal)
+		return canInsert, MakePlan2JsonConstExprWithType(string(num)), err
+		/* 	case types.T_uuid:
+		canInsert, num, err := setInsertValueUuid(proc, numVal) */
+	case types.T_time:
+		canInsert, num, err := util.SetInsertValueTime(proc, numVal, colType)
+		return canInsert, MakePlan2TimeConstExprWithType(int64(num)), err
+	case types.T_date:
+		canInsert, num, err := util.SetInsertValueDate(proc, numVal, colType)
+		return canInsert, MakePlan2DateConstExprWithType(int32(num)), err
+	case types.T_datetime:
+		canInsert, num, err := util.SetInsertValueDateTime(proc, numVal, colType)
+		return canInsert, MakePlan2DateTimeConstExprWithType(int64(num)), err
+	case types.T_timestamp:
+		canInsert, num, err := util.SetInsertValueTimeStamp(proc, numVal, colType)
+		return canInsert, MakePlan2TimestampConstExprWithType(int64(num)), err
+
+	case types.T_enum:
+		return false, nil, nil
+	}
+
+	return false, nil, nil
+}
+
 func buildValueScan(
 	isAllDefault bool,
 	info *dmlSelectInfo,
@@ -971,6 +1051,7 @@ func buildValueScan(
 ) error {
 	var err error
 
+	proc := builder.compCtx.GetProcess()
 	lastTag := builder.genNewTag()
 	colCount := len(updateColumns)
 	rowsetData := &plan.RowsetData{
@@ -1016,11 +1097,14 @@ func buildValueScan(
 			binder.builder = builder
 			for _, r := range slt.Rows {
 				if nv, ok := r[i].(*tree.NumVal); ok {
-					canInsert, err := util.SetInsertValue(proc, nv, colTyp)
+					canInsert, expr, err := MakeInsertValueExpr(proc, nv, &colTyp)
 					if err != nil {
 						return err
 					}
 					if canInsert {
+						rowsetData.Cols[i].Data = append(rowsetData.Cols[i].Data, &plan.RowsetExpr{
+							Expr: expr,
+						})
 						continue
 					}
 				}
