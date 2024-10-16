@@ -488,6 +488,18 @@ func (parser *CSVParser) appendCSVTokenToRecordBuffer(token csvToken) {
 	parser.recordBuffer = append(parser.recordBuffer, byte(token))
 }
 
+func (parser *CSVParser) appendContext(content []byte) {
+	parser.recordBuffer = append(parser.recordBuffer, content...)
+}
+
+func (parser *CSVParser) appendContext2(content []byte) {
+	parser.recordBuffer = append(parser.recordBuffer, content...)
+}
+
+func (parser *CSVParser) makedst() []field {
+	return make([]field, len(parser.fieldIndexes))
+}
+
 // readUntil reads the buffer until any character from the `chars` set is found.
 // that character is excluded from the final buffer.
 func (parser *CSVParser) readUntil(chars *byteSet) ([]byte, byte, error) {
@@ -572,7 +584,8 @@ outside:
 			if prevToken == csvTokenDelimiter {
 				return nil, errUnexpectedQuoteField
 			}
-			parser.recordBuffer = append(parser.recordBuffer, content...)
+			parser.appendContext(content)
+			// parser.recordBuffer = append(parser.recordBuffer, content...)
 			prevToken = csvTokenAnyUnquoted
 		}
 
@@ -600,7 +613,8 @@ outside:
 			if prevToken != csvTokenComma && prevToken != csvTokenNewLine {
 				if parser.unescapedQuote {
 					whitespaceLine = false
-					parser.recordBuffer = append(parser.recordBuffer, parser.quote...)
+					//parser.recordBuffer = append(parser.recordBuffer, parser.quote...)
+					parser.appendContext2(parser.quote)
 					continue
 				}
 				return nil, errUnexpectedQuoteField
@@ -660,7 +674,8 @@ outside:
 	str := string(parser.recordBuffer) // Convert to string once to batch allocations
 	dst = dst[:0]
 	if cap(dst) < len(parser.fieldIndexes) {
-		dst = make([]field, len(parser.fieldIndexes))
+		//dst = make([]field, len(parser.fieldIndexes))
+		dst = parser.makedst()
 	}
 	dst = dst[:len(parser.fieldIndexes)]
 	var preIdx int
