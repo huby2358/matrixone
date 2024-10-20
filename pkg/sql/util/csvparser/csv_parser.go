@@ -38,7 +38,8 @@ var (
 )
 
 type Field struct {
-	Val    string
+	// Val    string
+	Val    []byte
 	IsNull bool
 }
 
@@ -260,12 +261,12 @@ func (parser *CSVParser) readRow(row []Field) ([]Field, error) {
 		return nil, err
 	}
 
-	str := string(parser.recordBuffer) // Convert to string once to batch allocations
+	// str := string(parser.recordBuffer) // Convert to string once to batch allocations
 
 	// remove the last empty value
 	if parser.cfg.TrimLastSep {
 		i := len(parser.fieldIndexes) - 1
-		if i >= 0 && len(str[parser.fieldIndexes[i]:]) == 0 {
+		if i >= 0 && len(parser.recordBuffer[parser.fieldIndexes[i]:]) == 0 {
 			parser.fieldIndexes = parser.fieldIndexes[:len(parser.fieldIndexes)-1]
 		}
 	}
@@ -277,7 +278,7 @@ func (parser *CSVParser) readRow(row []Field) ([]Field, error) {
 	row = row[:len(parser.fieldIndexes)]
 	var preIdx int
 	for i, idx := range parser.fieldIndexes {
-		unescaped, isNull, err := parser.unescapeString(str[preIdx:idx], parser.fieldIsQuoted[i])
+		unescaped, isNull, err := parser.unescapeString(parser.recordBuffer[preIdx:idx], parser.fieldIsQuoted[i])
 		if err != nil {
 			return nil, err
 		}
@@ -289,13 +290,13 @@ func (parser *CSVParser) readRow(row []Field) ([]Field, error) {
 	return row, nil
 }
 
-func (parser *CSVParser) unescapeString(content string, quoted bool) (unescaped string, isNull bool, err error) {
+func (parser *CSVParser) unescapeString(content []byte, quoted bool) (unescaped []byte, isNull bool, err error) {
 	unescaped = content
 	// Convert the input from another charset to utf8mb4 before we return the string.
-	if parser.escFlavor == escapeFlavorMySQLWithNull && unescaped == parser.escapedBy+`N` {
+	if parser.escFlavor == escapeFlavorMySQLWithNull && string(unescaped) == parser.escapedBy+`N` {
 		return content, true, nil
 	}
-	if parser.cfg.FieldsEnclosedBy != "" && !quoted && unescaped == "NULL" {
+	if parser.cfg.FieldsEnclosedBy != "" && !quoted && string(unescaped) == "NULL" {
 		return content, true, nil
 	}
 	if len(parser.escapedBy) > 0 {
@@ -305,9 +306,9 @@ func (parser *CSVParser) unescapeString(content string, quoted bool) (unescaped 
 		// this branch represents "quote is not configured" or "quoted null is null" or "this field has no quote"
 		// we check null for them
 		isNull = !parser.cfg.NotNull &&
-			slices.Contains(parser.cfg.Null, unescaped)
+			slices.Contains(parser.cfg.Null, string(unescaped))
 		// avoid \\N becomes NULL
-		if parser.escFlavor == escapeFlavorMySQLWithNull && unescaped == parser.escapedBy+`N` {
+		if parser.escFlavor == escapeFlavorMySQLWithNull && string(unescaped) == parser.escapedBy+`N` {
 			isNull = false
 		}
 	}
@@ -722,14 +723,13 @@ func (parser *CSVParser) readColumns() error {
 	}
 
 	parser.columns = make([]string, 0, len(parser.fieldIndexes))
-	str := string(parser.recordBuffer) // Convert to string once to batch allocations
 	var preIdx int
 	for i, idx := range parser.fieldIndexes {
-		colNameStr, _, err := parser.unescapeString(str[preIdx:idx], parser.fieldIsQuoted[i])
+		colNameStr, _, err := parser.unescapeString(parser.recordBuffer[preIdx:idx], parser.fieldIsQuoted[i])
 		if err != nil {
 			return err
 		}
-		parser.columns = append(parser.columns, strings.ToLower(colNameStr))
+		parser.columns = append(parser.columns, strings.ToLower(string(colNameStr)))
 		preIdx = idx
 	}
 	return nil
@@ -805,20 +805,20 @@ func (parser *CSVParser) SetColumns(columns []string) {
 }
 
 func unescape(
-	input string,
+	input []byte,
 	delim string,
 	escFlavor escapeFlavor,
 	escChar byte,
 	unescapeRegexp *regexp.Regexp,
-) string {
+) []byte {
 	if len(delim) > 0 {
 		delim2 := delim + delim
-		if strings.Contains(input, delim2) {
-			input = strings.ReplaceAll(input, delim2, delim)
+		if strings.Contains(string(input), delim2) {
+			input = []byte(strings.ReplaceAll(string(input), delim2, delim))
 		}
 	}
-	if escFlavor != escapeFlavorNone && strings.IndexByte(input, escChar) != -1 {
-		input = unescapeRegexp.ReplaceAllStringFunc(input, func(substr string) string {
+	if escFlavor != escapeFlavorNone && strings.IndexByte(string(input), escChar) != -1 {
+		input = []byte(unescapeRegexp.ReplaceAllStringFunc(string(input), func(substr string) string {
 			switch substr[1] {
 			case '0':
 				return "\x00"
@@ -835,7 +835,7 @@ func unescape(
 			default:
 				return substr[1:]
 			}
-		})
+		}))
 	}
 	return input
 }

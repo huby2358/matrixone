@@ -509,9 +509,9 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 		id := types.T(col.Typ.Id)
 		if id != types.T_char && id != types.T_varchar && id != types.T_json &&
 			id != types.T_binary && id != types.T_varbinary && id != types.T_blob && id != types.T_text && id != types.T_datalink {
-			field.Val = strings.TrimSpace(field.Val)
+			field.Val = bytes.TrimSpace(field.Val)
 		}
-		isNullOrEmpty := field.IsNull || (getNullFlag(param.NullMap, col.Name, field.Val))
+		isNullOrEmpty := field.IsNull || (getNullFlag(param.NullMap, col.Name, string(field.Val)))
 		if id != types.T_char && id != types.T_varchar &&
 			id != types.T_binary && id != types.T_varbinary && id != types.T_json && id != types.T_blob && id != types.T_text && id != types.T_datalink {
 			isNullOrEmpty = isNullOrEmpty || len(field.Val) == 0
@@ -521,7 +521,7 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 		}
 		switch id {
 		case types.T_bool:
-			_, err := types.ParseBool(field.Val)
+			_, err := types.ParseBool(string(field.Val))
 			if err != nil {
 				return false
 			}
@@ -539,89 +539,89 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 				return false
 			}
 		case types.T_int8:
-			_, err := strconv.ParseInt(field.Val, 10, 8)
+			_, err := strconv.ParseInt(string(field.Val), 10, 8)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < math.MinInt8 || f > math.MaxInt8 {
 					return false
 				}
 			}
 		case types.T_int16:
-			_, err := strconv.ParseInt(field.Val, 10, 16)
+			_, err := strconv.ParseInt(string(field.Val), 10, 16)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < math.MinInt16 || f > math.MaxInt16 {
 					return false
 				}
 			}
 		case types.T_int32:
-			_, err := strconv.ParseInt(field.Val, 10, 32)
+			_, err := strconv.ParseInt(string(field.Val), 10, 32)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < math.MinInt32 || f > math.MaxInt32 {
 					return false
 				}
 			}
 		case types.T_int64:
-			_, err := strconv.ParseInt(field.Val, 10, 64)
+			_, err := strconv.ParseInt(string(field.Val), 10, 64)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < math.MinInt64 || f > math.MaxInt64 {
 					return false
 				}
 			}
 		case types.T_uint8:
-			_, err := strconv.ParseUint(field.Val, 10, 8)
+			_, err := strconv.ParseUint(string(field.Val), 10, 8)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < 0 || f > math.MaxUint8 {
 					return false
 				}
 			}
 		case types.T_uint16:
-			_, err := strconv.ParseUint(field.Val, 10, 16)
+			_, err := strconv.ParseUint(string(field.Val), 10, 16)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < 0 || f > math.MaxUint16 {
 					return false
 				}
 			}
 		case types.T_uint32:
-			_, err := strconv.ParseUint(field.Val, 10, 32)
+			_, err := strconv.ParseUint(string(field.Val), 10, 32)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < 0 || f > math.MaxUint32 {
 					return false
 				}
 			}
 		case types.T_uint64:
-			_, err := strconv.ParseUint(field.Val, 10, 64)
+			_, err := strconv.ParseUint(string(field.Val), 10, 64)
 			if err != nil {
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < 0 || f > math.MaxUint64 {
 					return false
 				}
@@ -629,12 +629,12 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 		case types.T_float32:
 			// origin float32 data type
 			if col.Typ.Scale < 0 || col.Typ.Width == 0 {
-				_, err := strconv.ParseFloat(field.Val, 32)
+				_, err := strconv.ParseFloat(string(field.Val), 32)
 				if err != nil {
 					return false
 				}
 			} else {
-				_, err := types.ParseDecimal128(field.Val, col.Typ.Width, col.Typ.Scale)
+				_, err := types.ParseDecimal128(string(field.Val), col.Typ.Width, col.Typ.Scale)
 				if err != nil {
 					return false
 				}
@@ -642,12 +642,12 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 		case types.T_float64:
 			// origin float64 data type
 			if col.Typ.Scale < 0 || col.Typ.Width == 0 {
-				_, err := strconv.ParseFloat(field.Val, 64)
+				_, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil {
 					return false
 				}
 			} else {
-				_, err := types.ParseDecimal128(field.Val, col.Typ.Width, col.Typ.Scale)
+				_, err := types.ParseDecimal128(string(field.Val), col.Typ.Width, col.Typ.Scale)
 				if err != nil {
 					return false
 				}
@@ -656,19 +656,19 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 		case types.T_char, types.T_varchar, types.T_binary, types.T_varbinary, types.T_blob, types.T_text, types.T_datalink:
 			continue
 		case types.T_array_float32:
-			_, err := types.StringToArrayToBytes[float32](field.Val)
+			_, err := types.StringToArrayToBytes[float32](string(field.Val))
 			if err != nil {
 				return false
 			}
 		case types.T_array_float64:
-			_, err := types.StringToArrayToBytes[float64](field.Val)
+			_, err := types.StringToArrayToBytes[float64](string(field.Val))
 			if err != nil {
 				return false
 			}
 		case types.T_json:
 			if param.Format == tree.CSV {
-				field.Val = fmt.Sprintf("%v", strings.Trim(field.Val, "\""))
-				byteJson, err := types.ParseStringToByteJson(field.Val)
+				field.Val = []byte(fmt.Sprintf("%v", strings.Trim(string(field.Val), "\"")))
+				byteJson, err := types.ParseStringToByteJson(string(field.Val))
 				if err != nil {
 					return false
 				}
@@ -678,26 +678,26 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 				}
 			}
 		case types.T_date:
-			_, err := types.ParseDateCast(field.Val)
+			_, err := types.ParseDateCast(string(field.Val))
 			if err != nil {
 				return false
 			}
 		case types.T_time:
-			_, err := types.ParseTime(field.Val, col.Typ.Scale)
+			_, err := types.ParseTime(string(field.Val), col.Typ.Scale)
 			if err != nil {
 				return false
 			}
 		case types.T_datetime:
-			_, err := types.ParseDatetime(field.Val, col.Typ.Scale)
+			_, err := types.ParseDatetime(string(field.Val), col.Typ.Scale)
 			if err != nil {
 				return false
 			}
 		case types.T_enum:
-			_, err := strconv.ParseUint(field.Val, 10, 16)
+			_, err := strconv.ParseUint(string(field.Val), 10, 16)
 			if err == nil {
 				continue
 			} else if errors.Is(err, strconv.ErrSyntax) {
-				_, err := types.ParseEnum(col.Typ.Enumvalues, field.Val)
+				_, err := types.ParseEnum(col.Typ.Enumvalues, string(field.Val))
 				if err != nil {
 					return false
 				}
@@ -705,13 +705,13 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 				if errors.Is(err, strconv.ErrRange) {
 					return false
 				}
-				f, err := strconv.ParseFloat(field.Val, 64)
+				f, err := strconv.ParseFloat(string(field.Val), 64)
 				if err != nil || f < 0 || f > math.MaxUint16 {
 					return false
 				}
 			}
 		case types.T_decimal64:
-			_, err := types.ParseDecimal64(field.Val, col.Typ.Width, col.Typ.Scale)
+			_, err := types.ParseDecimal64(string(field.Val), col.Typ.Width, col.Typ.Scale)
 			if err != nil {
 				// we tolerate loss of digits.
 				if !moerr.IsMoErrCode(err, moerr.ErrDataTruncated) {
@@ -719,7 +719,7 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 				}
 			}
 		case types.T_decimal128:
-			_, err := types.ParseDecimal128(field.Val, col.Typ.Width, col.Typ.Scale)
+			_, err := types.ParseDecimal128(string(field.Val), col.Typ.Width, col.Typ.Scale)
 			if err != nil {
 				// we tolerate loss of digits.
 				if !moerr.IsMoErrCode(err, moerr.ErrDataTruncated) {
@@ -728,12 +728,12 @@ func isLegalLine(param *tree.ExternParam, cols []*plan.ColDef, fields []csvparse
 			}
 		case types.T_timestamp:
 			t := time.Local
-			_, err := types.ParseTimestamp(t, field.Val, col.Typ.Scale)
+			_, err := types.ParseTimestamp(t, string(field.Val), col.Typ.Scale)
 			if err != nil {
 				return false
 			}
 		case types.T_uuid:
-			_, err := types.ParseUuid(field.Val)
+			_, err := types.ParseUuid(string(field.Val))
 			if err != nil {
 				return false
 			}
@@ -859,7 +859,7 @@ func checkLineValidRestrictive(param *ExternalParam, proc *process.Process, line
 				return moerr.NewInvalidInputf(proc.Ctx, "the data of row %d contained is not equal to input columns", rowIdx+1)
 			}
 			field := line[len(line)-1]
-			if field.Val != "" {
+			if string(field.Val) != "" {
 				return moerr.NewInvalidInputf(proc.Ctx, "the data of row %d contained is not equal to input columns", rowIdx+1)
 			}
 		}
@@ -1159,12 +1159,12 @@ func transJsonObject2Lines(ctx context.Context, str string, attrs []string, cols
 			if err != nil {
 				return nil, err
 			}
-			res = append(res, csvparser.Field{Val: string(data)})
+			res = append(res, csvparser.Field{Val: data})
 			continue
 		}
 
-		val := fmt.Sprint(valN)
-		res = append(res, csvparser.Field{Val: val, IsNull: val == JsonNull})
+		//val := fmt.Sprint(valN)
+		res = append(res, csvparser.Field{Val: []byte(fmt.Sprint(valN)), IsNull: fmt.Sprint(valN) == JsonNull})
 	}
 	return res, nil
 }
@@ -1207,12 +1207,11 @@ func transJsonArray2Lines(ctx context.Context, str string, attrs []string, cols 
 			if err != nil {
 				return nil, err
 			}
-			res = append(res, csvparser.Field{Val: string(data)})
+			res = append(res, csvparser.Field{Val: data})
 			continue
 		}
 
-		val := fmt.Sprint(valN)
-		res = append(res, csvparser.Field{Val: val, IsNull: val == JsonNull})
+		res = append(res, csvparser.Field{Val: []byte(fmt.Sprint(valN)), IsNull: fmt.Sprint(valN) == JsonNull})
 	}
 	return res, nil
 }
@@ -1232,7 +1231,7 @@ func getNullFlag(nullMap map[string][]string, attr, field string) bool {
 
 func getFieldFromLine(line []csvparser.Field, colName string, param *ExternalParam) csvparser.Field {
 	if catalog.ContainExternalHidenCol(colName) {
-		return csvparser.Field{Val: param.Fileparam.Filepath}
+		return csvparser.Field{Val: []byte(param.Fileparam.Filepath)}
 	}
 	return line[param.TbColToDataCol[strings.ToLower(colName)]]
 }
@@ -1293,9 +1292,9 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 	id := types.T(param.Cols[colIdx].Typ.Id)
 	if id != types.T_char && id != types.T_varchar && id != types.T_json &&
 		id != types.T_binary && id != types.T_varbinary && id != types.T_blob && id != types.T_text && id != types.T_datalink {
-		field.Val = strings.TrimSpace(field.Val)
+		field.Val = bytes.TrimSpace(field.Val)
 	}
-	isNullOrEmpty := field.IsNull || (getNullFlag(param.Extern.NullMap, param.Attrs[colIdx], field.Val))
+	isNullOrEmpty := field.IsNull || (getNullFlag(param.Extern.NullMap, param.Attrs[colIdx], string(field.Val)))
 	if id != types.T_char && id != types.T_varchar &&
 		id != types.T_binary && id != types.T_varbinary && id != types.T_json && id != types.T_blob && id != types.T_text && id != types.T_datalink {
 		isNullOrEmpty = isNullOrEmpty || len(field.Val) == 0
@@ -1306,7 +1305,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 	}
 
 	if param.ParallelLoad {
-		err := vector.SetStringAt(vec, rowIdx, field.Val, mp)
+		err := vector.SetBytesAt(vec, rowIdx, field.Val, mp)
 		if err != nil {
 			return err
 		}
@@ -1315,7 +1314,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 
 	switch id {
 	case types.T_bool:
-		b, err := types.ParseBool(field.Val)
+		b, err := types.ParseBool(string(field.Val))
 		if err != nil {
 			return moerr.NewInternalErrorf(param.Ctx, "the input value '%s' is not bool type for column %d", field.Val, colIdx)
 		}
@@ -1339,7 +1338,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_int8:
-		d, err := strconv.ParseInt(field.Val, 10, 8)
+		d, err := strconv.ParseInt(string(field.Val), 10, 8)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, int8(d)); err != nil {
 				return err
@@ -1349,7 +1348,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int8 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < math.MinInt8 || f > math.MaxInt8 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int8 type for column %d", field.Val, colIdx)
@@ -1359,7 +1358,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_int16:
-		d, err := strconv.ParseInt(field.Val, 10, 16)
+		d, err := strconv.ParseInt(string(field.Val), 10, 16)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, int16(d)); err != nil {
 				return err
@@ -1369,7 +1368,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int16 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < math.MinInt16 || f > math.MaxInt16 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int16 type for column %d", field.Val, colIdx)
@@ -1379,7 +1378,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_int32:
-		d, err := strconv.ParseInt(field.Val, 10, 32)
+		d, err := strconv.ParseInt(string(field.Val), 10, 32)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, int32(d)); err != nil {
 				return err
@@ -1389,7 +1388,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int32 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < math.MinInt32 || f > math.MaxInt32 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int32 type for column %d", field.Val, colIdx)
@@ -1399,7 +1398,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_int64:
-		d, err := strconv.ParseInt(field.Val, 10, 64)
+		d, err := strconv.ParseInt(string(field.Val), 10, 64)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, d); err != nil {
 				return err
@@ -1409,7 +1408,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int64 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < math.MinInt64 || f > math.MaxInt64 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not int64 type for column %d", field.Val, colIdx)
@@ -1419,7 +1418,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_uint8:
-		d, err := strconv.ParseUint(field.Val, 10, 8)
+		d, err := strconv.ParseUint(string(field.Val), 10, 8)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, uint8(d)); err != nil {
 				return err
@@ -1429,7 +1428,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint8 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < 0 || f > math.MaxUint8 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint8 type for column %d", field.Val, colIdx)
@@ -1439,7 +1438,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_uint16:
-		d, err := strconv.ParseUint(field.Val, 10, 16)
+		d, err := strconv.ParseUint(string(field.Val), 10, 16)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, uint16(d)); err != nil {
 				return err
@@ -1449,7 +1448,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint16 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < 0 || f > math.MaxUint16 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint16 type for column %d", field.Val, colIdx)
@@ -1459,7 +1458,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_uint32:
-		d, err := strconv.ParseUint(field.Val, 10, 32)
+		d, err := strconv.ParseUint(string(field.Val), 10, 32)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, uint32(d)); err != nil {
 				return err
@@ -1469,7 +1468,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint32 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < 0 || f > math.MaxUint32 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint32 type for column %d", field.Val, colIdx)
@@ -1479,7 +1478,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_uint64:
-		d, err := strconv.ParseUint(field.Val, 10, 64)
+		d, err := strconv.ParseUint(string(field.Val), 10, 64)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, d); err != nil {
 				return err
@@ -1489,7 +1488,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint64 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < 0 || f > math.MaxUint64 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint64 type for column %d", field.Val, colIdx)
@@ -1501,7 +1500,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 	case types.T_float32:
 		// origin float32 data type
 		if vec.GetType().Scale < 0 || vec.GetType().Width == 0 {
-			d, err := strconv.ParseFloat(field.Val, 32)
+			d, err := strconv.ParseFloat(string(field.Val), 32)
 			if err != nil {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not float32 type for column %d", field.Val, colIdx)
@@ -1510,7 +1509,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				return err
 			}
 		} else {
-			d, err := types.ParseDecimal128(field.Val, vec.GetType().Width, vec.GetType().Scale)
+			d, err := types.ParseDecimal128(string(field.Val), vec.GetType().Width, vec.GetType().Scale)
 			if err != nil {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not float32 type for column %d", field.Val, colIdx)
@@ -1522,7 +1521,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 	case types.T_float64:
 		// origin float64 data type
 		if vec.GetType().Scale < 0 || vec.GetType().Width == 0 {
-			d, err := strconv.ParseFloat(field.Val, 64)
+			d, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not float64 type for column %d", field.Val, colIdx)
@@ -1531,7 +1530,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				return err
 			}
 		} else {
-			d, err := types.ParseDecimal128(field.Val, vec.GetType().Width, vec.GetType().Scale)
+			d, err := types.ParseDecimal128(string(field.Val), vec.GetType().Width, vec.GetType().Scale)
 			if err != nil {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not float64 type for column %d", field.Val, colIdx)
@@ -1541,12 +1540,12 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_char, types.T_varchar, types.T_binary, types.T_varbinary, types.T_blob, types.T_text, types.T_datalink:
-		err := vector.SetStringAt(vec, rowIdx, field.Val, mp)
+		err := vector.SetBytesAt(vec, rowIdx, field.Val, mp)
 		if err != nil {
 			return err
 		}
 	case types.T_array_float32:
-		arrBytes, err := types.StringToArrayToBytes[float32](field.Val)
+		arrBytes, err := types.StringToArrayToBytes[float32](string(field.Val))
 		if err != nil {
 			return err
 		}
@@ -1555,7 +1554,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_array_float64:
-		arrBytes, err := types.StringToArrayToBytes[float64](field.Val)
+		arrBytes, err := types.StringToArrayToBytes[float64](string(field.Val))
 		if err != nil {
 			return err
 		}
@@ -1568,8 +1567,8 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 		if param.Extern.Format != tree.CSV {
 			jsonBytes = []byte(field.Val)
 		} else {
-			field.Val = fmt.Sprintf("%v", strings.Trim(field.Val, "\""))
-			byteJson, err := types.ParseStringToByteJson(field.Val)
+			field.Val = []byte(fmt.Sprintf("%v", bytes.Trim(field.Val, "\"")))
+			byteJson, err := types.ParseSliceToByteJson(field.Val)
 			if err != nil {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not json type for column %d", field.Val, colIdx)
@@ -1586,7 +1585,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_date:
-		d, err := types.ParseDateCast(field.Val)
+		d, err := types.ParseDateCast(string(field.Val))
 		if err != nil {
 			logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 			return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not Date type for column %d", field.Val, colIdx)
@@ -1595,7 +1594,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_time:
-		d, err := types.ParseTime(field.Val, vec.GetType().Scale)
+		d, err := types.ParseTime(string(field.Val), vec.GetType().Scale)
 		if err != nil {
 			logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 			return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not Time type for column %d", field.Val, colIdx)
@@ -1604,7 +1603,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_datetime:
-		d, err := types.ParseDatetime(field.Val, vec.GetType().Scale)
+		d, err := types.ParseDatetime(string(field.Val), vec.GetType().Scale)
 		if err != nil {
 			logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 			return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not Datetime type for column %d", field.Val, colIdx)
@@ -1613,13 +1612,13 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_enum:
-		d, err := strconv.ParseUint(field.Val, 10, 16)
+		d, err := strconv.ParseUint(string(field.Val), 10, 16)
 		if err == nil {
 			if err := vector.SetFixedAtNoTypeCheck(vec, rowIdx, types.Enum(d)); err != nil {
 				return err
 			}
 		} else if errors.Is(err, strconv.ErrSyntax) {
-			v, err := types.ParseEnum(param.Cols[colIdx].Typ.Enumvalues, field.Val)
+			v, err := types.ParseEnum(param.Cols[colIdx].Typ.Enumvalues, string(field.Val))
 			if err != nil {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return err
@@ -1632,7 +1631,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint16 type for column %d", field.Val, colIdx)
 			}
-			f, err := strconv.ParseFloat(field.Val, 64)
+			f, err := strconv.ParseFloat(string(field.Val), 64)
 			if err != nil || f < 0 || f > math.MaxUint16 {
 				logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 				return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uint16 type for column %d", field.Val, colIdx)
@@ -1642,7 +1641,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			}
 		}
 	case types.T_decimal64:
-		d, err := types.ParseDecimal64(field.Val, vec.GetType().Width, vec.GetType().Scale)
+		d, err := types.ParseDecimal64(string(field.Val), vec.GetType().Width, vec.GetType().Scale)
 		if err != nil {
 			// we tolerate loss of digits.
 			if !moerr.IsMoErrCode(err, moerr.ErrDataTruncated) {
@@ -1654,7 +1653,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_decimal128:
-		d, err := types.ParseDecimal128(field.Val, vec.GetType().Width, vec.GetType().Scale)
+		d, err := types.ParseDecimal128(string(field.Val), vec.GetType().Width, vec.GetType().Scale)
 		if err != nil {
 			// we tolerate loss of digits.
 			if !moerr.IsMoErrCode(err, moerr.ErrDataTruncated) {
@@ -1667,7 +1666,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 		}
 	case types.T_timestamp:
 		t := time.Local
-		d, err := types.ParseTimestamp(t, field.Val, vec.GetType().Scale)
+		d, err := types.ParseTimestamp(t, string(field.Val), vec.GetType().Scale)
 		if err != nil {
 			logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 			return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not Timestamp type for column %d", field.Val, colIdx)
@@ -1676,7 +1675,7 @@ func getColData(bat *batch.Batch, line []csvparser.Field, rowIdx int, param *Ext
 			return err
 		}
 	case types.T_uuid:
-		d, err := types.ParseUuid(field.Val)
+		d, err := types.ParseUuid(string(field.Val))
 		if err != nil {
 			logutil.Errorf("parse field[%v] err:%v", field.Val, err)
 			return moerr.NewInternalErrorf(param.Ctx, "the input value '%v' is not uuid type for column %d", field.Val, colIdx)
@@ -1759,7 +1758,7 @@ func makeBatchRows(param *ExternalParam, proc *process.Process, bat *batch.Batch
 
 		rowIdx := i
 		if param.Extern.Format == tree.JSONLINE {
-			row, err = transJson2Lines(proc.Ctx, row[0].Val, param.Attrs, param.Cols, param.Extern.JsonData, param)
+			row, err = transJson2Lines(proc.Ctx, string(row[0].Val), param.Attrs, param.Cols, param.Extern.JsonData, param)
 			if err != nil {
 				if errors.Is(err, io.ErrUnexpectedEOF) {
 					logutil.Infof("unexpected EOF, wait for next batch")
