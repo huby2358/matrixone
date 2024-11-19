@@ -131,13 +131,8 @@ func (antiJoin *AntiJoin) Call(proc *process.Process) (vm.CallResult, error) {
 				return result, err
 			}
 
-			result.Batch, err = ap.EvalProjection(probeResult.Batch, proc)
-			if err != nil {
-				return result, err
-			}
-
-			analyzer.Output(result.Batch)
-			return result, nil
+			analyzer.Output(probeResult.Batch)
+			return probeResult, nil
 
 		default:
 			result.Batch = nil
