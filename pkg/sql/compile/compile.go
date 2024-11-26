@@ -494,7 +494,7 @@ func (c *Compile) prePipelineInitializer() (err error) {
 
 // run once
 func (c *Compile) runOnce() (err error) {
-	if c.db == "a" {
+	if c.db == "ann" {
 		c.printPipeline()
 	}
 
@@ -2419,6 +2419,7 @@ func (c *Compile) compileProbeSideForBroadcastJoin(node, left, right *plan.Node,
 		}
 		c.anal.isFirst = false
 	case plan.Node_L2:
+		fmt.Println("666666, Node_L2 begin mcpu is ", probeScopes[0].NodeInfo.Mcpu, "c is tp ", c.IsTpQuery(), "c is prepare ", c.isPrepare)
 		rs = c.newProbeScopeListForBroadcastJoin(probeScopes, false)
 		currentFirstFlag := c.anal.isFirst
 		for i := range rs {
@@ -4135,10 +4136,16 @@ func (c *Compile) generateNodes(n *plan.Node) (engine.Nodes, error) {
 		partialResults, _, _ := checkAggOptimize(n)
 		if partialResults != nil {
 			forceSingle = true
+			if n.NodeType == plan.Node_TABLE_SCAN {
+				fmt.Println("666666, len(n.AggList) is > 0")
+			}
 		}
 	}
 	if len(n.OrderBy) > 0 {
 		forceSingle = true
+		if n.NodeType == plan.Node_TABLE_SCAN {
+			fmt.Println("666666, len(n.OrderBy) is > 0")
+		}
 	}
 
 	if c.determinExpandRanges(n) {
@@ -4183,6 +4190,9 @@ func (c *Compile) generateNodes(n *plan.Node) (engine.Nodes, error) {
 	} else {
 		// add current CN
 		mcpu := c.generateCPUNumber(c.ncpu, int(n.Stats.BlockNum))
+		fmt.Println("666666, begin origin mcpu is ", mcpu, "ncpu is ", c.ncpu, "block num is ", int(n.Stats.BlockNum), "is tp ", c.IsTpQuery(),
+			"cost is ", n.Stats.Cost)
+
 		if forceSingle {
 			mcpu = 1
 		}
@@ -4192,6 +4202,13 @@ func (c *Compile) generateNodes(n *plan.Node) (engine.Nodes, error) {
 			CNCNT:            1,
 			NeedExpandRanges: true,
 		})
+		if n.NodeType == plan.Node_TABLE_SCAN {
+			if forceSingle {
+				fmt.Println("666666, begin else mcpu is %d, forceSingle is true", mcpu)
+			} else {
+				fmt.Println("666666, begin else mcpu is %d, forceSingle is false", mcpu)
+			}
+		}
 		return nodes, nil
 	}
 
@@ -4199,10 +4216,17 @@ func (c *Compile) generateNodes(n *plan.Node) (engine.Nodes, error) {
 	// or sometimes force on one CN
 	// if not disttae engine, just put all payloads in current CN
 	if len(c.cnList) == 1 || relData.DataCnt() < plan2.BlockThresholdForOneCN(c.ncpu) || n.Stats.ForceOneCN || forceSingle {
-		return putBlocksInCurrentCN(c, relData, forceSingle), nil
+		node := putBlocksInCurrentCN(c, relData, forceSingle)
+		if n.NodeType == plan.Node_TABLE_SCAN {
+			fmt.Println("666666, mid mcpu is %d", node[0].Mcpu)
+		}
+		return node, nil
 	}
 	// only support disttae engine for now
 	nodes, err = shuffleBlocksToMultiCN(c, rel, relData, n)
+	if n.NodeType == plan.Node_TABLE_SCAN {
+		fmt.Println("666666, last, mcpu is %d", nodes[0].Mcpu)
+	}
 	return nodes, err
 }
 
