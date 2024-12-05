@@ -650,5 +650,7 @@ func init() {
 		"dedup":                      DEDUP,
 		"savepoint":                  SAVEPOINT,
 		"recovery_window":            RECOVERY_WINDOW,
+		"checking":                   CHECKING,
+		"nochecking":                 NOCHECKING,
 	}
 }
