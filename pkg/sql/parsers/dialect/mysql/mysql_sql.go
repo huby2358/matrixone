@@ -8052,11 +8052,6 @@ func (st *yySymType) directionUnion() tree.Direction {
 	return v
 }
 
-func (st *yySymType) duplicateKeyUnion() tree.DuplicateKey {
-	v, _ := st.union.(tree.DuplicateKey)
-	return v
-}
-
 func (st *yySymType) elseIfClauseUnion() *tree.ElseIfStmt {
 	v, _ := st.union.(*tree.ElseIfStmt)
 	return v
@@ -8299,6 +8294,11 @@ func (st *yySymType) loadColumnUnion() tree.LoadColumn {
 
 func (st *yySymType) loadColumnsUnion() []tree.LoadColumn {
 	v, _ := st.union.([]tree.LoadColumn)
+	return v
+}
+
+func (st *yySymType) loadDuplicateModeUnion() tree.LoadDupMode {
+	v, _ := st.union.(tree.LoadDupMode)
 	return v
 }
 
@@ -11520,10 +11520,10 @@ yydefault:
 //line mysql_sql.y:1562
 		{
 			yyLOCAL = &tree.Load{
-				Local:             yyDollar[3].boolValUnion(),
-				Param:             yyDollar[4].loadParamUnion(),
-				DuplicateHandling: yyDollar[5].duplicateKeyUnion(),
-				Table:             yyDollar[8].tableNameUnion(),
+				Local:        yyDollar[3].boolValUnion(),
+				Param:        yyDollar[4].loadParamUnion(),
+				DuplicateOpt: yyDollar[5].loadDuplicateModeUnion(),
+				Table:        yyDollar[8].tableNameUnion(),
 			}
 			yyLOCAL.(*tree.Load).Param.Tail = yyDollar[9].tailParamUnion()
 			yyLOCAL.(*tree.Load).Param.Parallel = yyDollar[10].unsignedOptUnion()
@@ -12031,42 +12031,42 @@ yydefault:
 		yyVAL.union = yyLOCAL
 	case 178:
 		yyDollar = yyS[yypt-0 : yypt+1]
-		var yyLOCAL tree.DuplicateKey
+		var yyLOCAL tree.LoadDupMode
 //line mysql_sql.y:1945
 		{
-			yyLOCAL = &tree.DuplicateKeyError{}
+			yyLOCAL = tree.LOAD_DUPLICATE_CHECKING
 		}
 		yyVAL.union = yyLOCAL
 	case 179:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		var yyLOCAL tree.DuplicateKey
+		var yyLOCAL tree.LoadDupMode
 //line mysql_sql.y:1949
 		{
-			yyLOCAL = &tree.DuplicateKeyError{}
+			yyLOCAL = tree.LOAD_DUPLICATE_CHECKING
 		}
 		yyVAL.union = yyLOCAL
 	case 180:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		var yyLOCAL tree.DuplicateKey
+		var yyLOCAL tree.LoadDupMode
 //line mysql_sql.y:1953
 		{
-			yyLOCAL = &tree.DuplicateKeyNoChecking{}
+			yyLOCAL = tree.LOAD_DUPLICATE_NOCHECKING
 		}
 		yyVAL.union = yyLOCAL
 	case 181:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		var yyLOCAL tree.DuplicateKey
+		var yyLOCAL tree.LoadDupMode
 //line mysql_sql.y:1957
 		{
-			yyLOCAL = &tree.DuplicateKeyIgnore{}
+			yyLOCAL = tree.LOAD_DUPLICATE_IGNORE
 		}
 		yyVAL.union = yyLOCAL
 	case 182:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		var yyLOCAL tree.DuplicateKey
+		var yyLOCAL tree.LoadDupMode
 //line mysql_sql.y:1961
 		{
-			yyLOCAL = &tree.DuplicateKeyReplace{}
+			yyLOCAL = tree.LOAD_DUPLICATE_REPLACE
 		}
 		yyVAL.union = yyLOCAL
 	case 183:

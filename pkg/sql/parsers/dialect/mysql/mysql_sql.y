@@ -1946,7 +1946,7 @@ duplicate_opt:
         $$ = tree.LOAD_DUPLICATE_CHECKING
     }
 |   CHECKING
-    {
+    {     
         $$ = tree.LOAD_DUPLICATE_CHECKING
     }
 |   NOCHECKING
