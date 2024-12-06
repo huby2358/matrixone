@@ -482,9 +482,38 @@ select count(*) from load_data_t9;
 
 drop table load_data_t9;
 
+
+drop table if exists load_data_duplicate;
+create table load_data_duplicate(col1 int primary key, col2 int);
+
+-- load xxx replace into , just support syntax now, when support totally after, change result here
+load data infile '$resources/load_data/test_duplicate_1.csv' replace  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+select * from load_data_duplicate order by col1, col2;
+delete from load_data_duplicate;
+
+load data infile '$resources/load_data/test_duplicate_1.csv' ignore into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+select * from load_data_duplicate order by col1, col2;
+delete from load_data_duplicate;
+
+
+-- load duplicate opt defaut is checking
+load data infile '$resources/load_data/test_duplicate_1.csv'  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+select * from load_data_duplicate order by col1, col2;
+delete from load_data_duplicate;
+
+load data infile '$resources/load_data/test_duplicate_1.csv' checking  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+select * from load_data_duplicate order by col1, col2;
+delete from load_data_duplicate;
+
+load data infile '$resources/load_data/test_duplicate_1.csv' nochecking  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+select * from load_data_duplicate order by col1, col2;
+delete from load_data_duplicate;
+
+drop table load_data_duplicate;
+
+
 drop table if exists load_data_type;
 create table load_data_type(col1 int);
-
 load data infile '$resources/load_data/test_int.csv' into table load_data_type fields terminated by ',';
 load data infile '$resources/load_data/test_int.csv' into table load_data_type fields terminated by ',' ignore 1 lines;
 select * from load_data_type;

@@ -916,6 +916,7 @@ select count(*) from load_data_t9;
 count(*)
 400000
 drop table load_data_t9;
+<<<<<<< HEAD
 drop table if exists load_data_type;
 create table load_data_type(col1 int);
 load data infile '$resources/load_data/test_int.csv' into table load_data_type fields terminated by ',';
@@ -925,3 +926,38 @@ select * from load_data_type;
 col1
 1
 drop table load_data_type;
+=======
+drop table if exists load_data_duplicate;
+create table load_data_duplicate(col1 int primary key, col2 int);
+load data infile '$resources/load_data/test_duplicate_1.csv' replace  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+Duplicate entry '2' for key 'col1'
+select * from load_data_duplicate order by col1, col2;
+col1    col2
+delete from load_data_duplicate;
+load data infile '$resources/load_data/test_duplicate_1.csv' ignore into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+select * from load_data_duplicate order by col1, col2;
+col1    col2
+1    2
+2    3
+3    3
+delete from load_data_duplicate;
+load data infile '$resources/load_data/test_duplicate_1.csv'  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+Duplicate entry '2' for key 'col1'
+select * from load_data_duplicate order by col1, col2;
+col1    col2
+delete from load_data_duplicate;
+load data infile '$resources/load_data/test_duplicate_1.csv' checking  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+Duplicate entry '2' for key 'col1'
+select * from load_data_duplicate order by col1, col2;
+col1    col2
+delete from load_data_duplicate;
+load data infile '$resources/load_data/test_duplicate_1.csv' nochecking  into table load_data_duplicate FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+select * from load_data_duplicate order by col1, col2;
+col1    col2
+1    2
+2    3
+2    4
+3    3
+delete from load_data_duplicate;
+drop table load_data_duplicate;
+>>>>>>> 57eb7430e (support load duplicate opt)
