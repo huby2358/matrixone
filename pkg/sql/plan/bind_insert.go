@@ -977,12 +977,17 @@ func (builder *QueryBuilder) appendNodesForInsertStmt(
 	}
 
 	tmpCtx := NewBindContext(builder, bindCtx)
-	lastNodeID = builder.appendNode(&plan.Node{
-		NodeType:    plan.Node_PROJECT,
-		ProjectList: projList1,
-		Children:    []int32{lastNodeID},
-		BindingTags: []int32{projTag1},
-	}, tmpCtx)
+	lastNode := builder.qry.Nodes[lastNodeID]
+	if lastNode.ProjectList == nil {
+		lastNode.ProjectList = projList1
+	} else {
+		lastNodeID = builder.appendNode(&plan.Node{
+			NodeType:    plan.Node_PROJECT,
+			ProjectList: projList1,
+			Children:    []int32{lastNodeID},
+			BindingTags: []int32{projTag1},
+		}, tmpCtx)
+	}
 
 	if hasAutoCol || compPkeyExpr != nil || clusterByExpr != nil {
 		lastNodeID = builder.appendNode(&plan.Node{
@@ -1007,12 +1012,17 @@ func (builder *QueryBuilder) appendNodesForInsertStmt(
 		projList2 = append(projList2, partitionExpr)
 	}
 
-	lastNodeID = builder.appendNode(&plan.Node{
-		NodeType:    plan.Node_PROJECT,
-		ProjectList: projList2,
-		Children:    []int32{lastNodeID},
-		BindingTags: []int32{builder.genNewTag()},
-	}, tmpCtx)
+	lastNode = builder.qry.Nodes[lastNodeID]
+	if lastNode.ProjectList == nil {
+		lastNode.ProjectList = projList2
+	} else {
+		lastNodeID = builder.appendNode(&plan.Node{
+			NodeType:    plan.Node_PROJECT,
+			ProjectList: projList2,
+			Children:    []int32{lastNodeID},
+			BindingTags: []int32{builder.genNewTag()},
+		}, tmpCtx)
+	}
 
 	return lastNodeID, colName2Idx, skipUniqueIdx, nil
 }
@@ -1143,12 +1153,16 @@ func (builder *QueryBuilder) buildValueScan(
 	}
 
 	lastTag = builder.genNewTag()
-	nodeID = builder.appendNode(&plan.Node{
-		NodeType:    plan.Node_PROJECT,
-		ProjectList: projectList,
-		Children:    []int32{nodeID},
-		BindingTags: []int32{lastTag},
-	}, bindCtx)
+	if scanNode.ProjectList == nil {
+		scanNode.ProjectList = projectList
+	} else {
+		nodeID = builder.appendNode(&plan.Node{
+			NodeType:    plan.Node_PROJECT,
+			ProjectList: projectList,
+			Children:    []int32{nodeID},
+			BindingTags: []int32{lastTag},
+		}, bindCtx)
+	}
 
 	return nodeID, nil
 }

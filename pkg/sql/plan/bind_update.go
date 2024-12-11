@@ -518,12 +518,17 @@ func (builder *QueryBuilder) bindUpdate(stmt *tree.Update, bindCtx *BindContext)
 
 	}
 
-	lastNodeID = builder.appendNode(&plan.Node{
-		NodeType:    plan.Node_PROJECT,
-		ProjectList: finalProjList,
-		Children:    []int32{lastNodeID},
-		BindingTags: []int32{finalProjTag},
-	}, bindCtx)
+	lastNode := builder.qry.Nodes[lastNodeID]
+	if lastNode.ProjectList == nil {
+		lastNode.ProjectList = finalProjList
+	} else {
+		lastNodeID = builder.appendNode(&plan.Node{
+			NodeType:    plan.Node_PROJECT,
+			ProjectList: finalProjList,
+			Children:    []int32{lastNodeID},
+			BindingTags: []int32{finalProjTag},
+		}, bindCtx)
+	}
 
 	lastNodeID = builder.appendNode(&plan.Node{
 		NodeType:    plan.Node_LOCK_OP,

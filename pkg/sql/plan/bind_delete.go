@@ -125,13 +125,17 @@ func (builder *QueryBuilder) bindDelete(stmt *tree.Delete, bindCtx *BindContext)
 			}
 		}
 		projectList[len(selectNode.ProjectList)] = partitionExpr
-		lastNodeID = builder.appendNode(&plan.Node{
-			NodeType:    plan.Node_PROJECT,
-			Children:    []int32{lastNodeID},
-			BindingTags: []int32{builder.genNewTag()},
-			ProjectList: projectList,
-		}, bindCtx)
-		selectNode = builder.qry.Nodes[lastNodeID]
+		if selectNode.ProjectList == nil {
+			selectNode.ProjectList = projectList
+		} else {
+			lastNodeID = builder.appendNode(&plan.Node{
+				NodeType:    plan.Node_PROJECT,
+				Children:    []int32{lastNodeID},
+				BindingTags: []int32{builder.genNewTag()},
+				ProjectList: projectList,
+			}, bindCtx)
+			selectNode = builder.qry.Nodes[lastNodeID]
+		}
 	}
 
 	idxScanNodes := make([][]*plan.Node, len(dmlCtx.tableDefs))
