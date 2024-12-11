@@ -191,6 +191,7 @@ func makeFinalProject(builder *QueryBuilder, bindCtx *BindContext, joinTblAndCen
 		return -1, err
 	}
 
+	// because node joinTblAndCentroidsUsingCrossL2Join has projectionlist, so hear just generator project node
 	projectWithCpKey := builder.appendNode(
 		&plan.Node{
 			NodeType:    plan.Node_PROJECT,

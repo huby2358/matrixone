@@ -46,39 +46,25 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/pb/timestamp"
 	"github.com/matrixorigin/matrixone/pkg/perfcounter"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/anti"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/apply"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/connector"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/deletion"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/dispatch"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/external"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/fill"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/filter"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/group"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/indexjoin"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/intersect"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/intersectall"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/join"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/left"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/lockop"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/loopjoin"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/merge"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergeblock"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergecte"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergedelete"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergegroup"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergerecursive"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/minus"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/multi_update"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/output"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/product"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/productl2"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/sample"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/semi"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/single"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/source"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/table_scan"
-	"github.com/matrixorigin/matrixone/pkg/sql/colexec/value_scan"
 	"github.com/matrixorigin/matrixone/pkg/sql/parsers/tree"
 	plan2 "github.com/matrixorigin/matrixone/pkg/sql/plan"
 	"github.com/matrixorigin/matrixone/pkg/sql/plan/function"
@@ -975,7 +961,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		if err != nil {
 			return nil, err
 		}
-		ss = c.compileSort(n, c.compileProjection(n, ss))
+		ss = c.compileSort(n, ss)
 		return ss, nil
 	case plan.Node_EXTERNAL_SCAN:
 		if n.ObjRef != nil {
@@ -988,7 +974,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		if err != nil {
 			return nil, err
 		}
-		ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(node, ss)))
+		ss = c.compileSort(n, c.compileRestrict(node, ss))
 		return ss, nil
 	case plan.Node_TABLE_SCAN:
 		c.appendMetaTables(n.ObjRef)
@@ -998,7 +984,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		if err != nil {
 			return nil, err
 		}
-		ss = c.compileProjection(n, c.compileRestrict(n, ss))
+		ss = c.compileRestrict(n, ss)
 		if n.Offset != nil {
 			ss = c.compileOffset(n, ss)
 		}
@@ -1012,9 +998,18 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		if err != nil {
 			return nil, err
 		}
-		ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(n, ss)))
+		ss = c.compileSort(n, c.compileRestrict(n, ss))
 		return ss, nil
-	case plan.Node_FILTER, plan.Node_PROJECT, plan.Node_PRE_DELETE:
+	case plan.Node_FILTER, plan.Node_PRE_DELETE:
+		ss, err = c.compilePlanScope(step, n.Children[0], ns)
+		if err != nil {
+			return nil, err
+		}
+
+		c.setAnalyzeCurrent(ss, int(curNodeIdx))
+		ss = c.compileSort(n, c.compileRestrict(n, ss))
+		return ss, nil
+	case plan.Node_PROJECT:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
 		if err != nil {
 			return nil, err
@@ -1035,13 +1030,13 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
 		if n.Stats.HashmapStats != nil && n.Stats.HashmapStats.Shuffle {
-			ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(n, c.compileShuffleGroup(n, ss, ns))))
+			ss = c.compileSort(n, c.compileRestrict(n, c.compileShuffleGroup(n, ss, ns)))
 			return ss, nil
 		} else if c.IsSingleScope(ss) {
-			ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(n, c.compileTPGroup(n, ss, ns))))
+			ss = c.compileSort(n, c.compileRestrict(n, c.compileTPGroup(n, ss, ns)))
 			return ss, nil
 		} else {
-			ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(n, c.compileMergeGroup(n, ss, ns, anyDistinctAgg))))
+			ss = c.compileSort(n, c.compileRestrict(n, c.compileMergeGroup(n, ss, ns, anyDistinctAgg)))
 			return ss, nil
 		}
 	case plan.Node_SAMPLE:
@@ -1051,7 +1046,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(n, c.compileSample(n, ss))))
+		ss = c.compileSort(n, c.compileRestrict(n, c.compileSample(n, ss)))
 		return ss, nil
 	case plan.Node_WINDOW:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -1060,7 +1055,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(n, c.compileWin(n, ss))))
+		ss = c.compileSort(n, c.compileRestrict(n, c.compileWin(n, ss)))
 		return ss, nil
 	case plan.Node_TIME_WINDOW:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -1069,7 +1064,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileProjection(n, c.compileRestrict(n, c.compileTimeWin(n, c.compileSort(n, ss))))
+		ss = c.compileRestrict(n, c.compileTimeWin(n, c.compileSort(n, ss)))
 		return ss, nil
 	case plan.Node_FILL:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -1078,7 +1073,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileProjection(n, c.compileRestrict(n, c.compileFill(n, ss)))
+		ss = c.compileRestrict(n, c.compileFill(n, ss))
 		return ss, nil
 	case plan.Node_JOIN:
 		left, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -1101,7 +1096,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileProjection(n, c.compileRestrict(n, c.compileSort(n, ss)))
+		ss = c.compileRestrict(n, c.compileSort(n, ss))
 		return ss, nil
 	case plan.Node_PARTITION:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -1110,7 +1105,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileProjection(n, c.compileRestrict(n, c.compilePartition(n, ss)))
+		ss = c.compileRestrict(n, c.compilePartition(n, ss))
 		return ss, nil
 	case plan.Node_UNION:
 		left, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -1262,7 +1257,6 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		if err != nil {
 			return nil, err
 		}
-		ss = c.compileProjection(n, ss)
 		return ss, nil
 	case plan.Node_FUNCTION_SCAN:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -1270,7 +1264,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 			return nil, err
 		}
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileSort(n, c.compileProjection(n, c.compileRestrict(n, c.compileTableFunction(n, ss))))
+		ss = c.compileSort(n, c.compileRestrict(n, c.compileTableFunction(n, ss)))
 		return ss, nil
 	case plan.Node_SINK_SCAN:
 		c.setAnalyzeCurrent(nil, int(curNodeIdx))
@@ -1278,7 +1272,6 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		if err != nil {
 			return nil, err
 		}
-		ss = c.compileProjection(n, ss)
 		return ss, nil
 	case plan.Node_RECURSIVE_SCAN:
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
@@ -1990,113 +1983,7 @@ func (c *Compile) compileProjection(n *plan.Node, ss []*Scope) []*Scope {
 	}
 
 	for i := range ss {
-		rootOp := ss[i].RootOp
-		if rootOp == nil {
-			c.setProjection(n, ss[i])
-			continue
-		}
-
-		switch op := rootOp.(type) {
-		case *table_scan.TableScan:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *value_scan.ValueScan:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *fill.Fill:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *source.Source:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *external.External:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *group.Group:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *mergegroup.MergeGroup:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *anti.AntiJoin:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *indexjoin.IndexJoin:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *join.InnerJoin:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *left.LeftJoin:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *loopjoin.LoopJoin:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *product.Product:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *productl2.Productl2:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *semi.SemiJoin:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-		case *single.SingleJoin:
-			if op.ProjectList == nil {
-				op.ProjectList = n.ProjectList
-			} else {
-				c.setProjection(n, ss[i])
-			}
-
-		default:
-			c.setProjection(n, ss[i])
-		}
+		c.setProjection(n, ss[i])
 	}
 
 	c.anal.isFirst = false

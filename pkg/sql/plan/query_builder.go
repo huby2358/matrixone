@@ -2200,13 +2200,18 @@ func (builder *QueryBuilder) buildUnion(stmt *tree.UnionClause, astOrderBy tree.
 	havingBinder := NewHavingBinder(builder, ctx)
 	projectionBinder := NewProjectionBinder(builder, ctx, havingBinder)
 
-	// append a project node
-	lastNodeID = builder.appendNode(&plan.Node{
-		NodeType:    plan.Node_PROJECT,
-		ProjectList: ctx.projects,
-		Children:    []int32{lastNodeID},
-		BindingTags: []int32{ctx.projectTag},
-	}, ctx)
+	lastNode := builder.qry.Nodes[lastNodeID]
+	if lastNode.ProjectList == nil {
+		lastNode.ProjectList = ctx.projects
+	} else {
+		// append a project node
+		lastNodeID = builder.appendNode(&plan.Node{
+			NodeType:    plan.Node_PROJECT,
+			ProjectList: ctx.projects,
+			Children:    []int32{lastNodeID},
+			BindingTags: []int32{ctx.projectTag},
+		}, ctx)
+	}
 
 	// append orderBy
 	if astOrderBy != nil {
@@ -2287,13 +2292,16 @@ func (builder *QueryBuilder) buildUnion(stmt *tree.UnionClause, astOrderBy tree.
 			})
 		}
 		ctx.resultTag = builder.genNewTag()
-
-		lastNodeID = builder.appendNode(&plan.Node{
-			NodeType:    plan.Node_PROJECT,
-			ProjectList: ctx.results,
-			Children:    []int32{lastNodeID},
-			BindingTags: []int32{ctx.resultTag},
-		}, ctx)
+		if builder.qry.Nodes[lastNodeID].ProjectList == nil {
+			builder.qry.Nodes[lastNodeID].ProjectList = ctx.results
+		} else {
+			lastNodeID = builder.appendNode(&plan.Node{
+				NodeType:    plan.Node_PROJECT,
+				ProjectList: ctx.results,
+				Children:    []int32{lastNodeID},
+				BindingTags: []int32{ctx.resultTag},
+			}, ctx)
+		}
 	} else {
 		ctx.results = ctx.projects
 	}
@@ -2751,13 +2759,16 @@ func (builder *QueryBuilder) bindSelect(stmt *tree.Select, ctx *BindContext, isR
 					//@xxx not a good choice
 					binding.tag = newBindingTag
 				}
-				nodeID = builder.appendNode(&plan.Node{
-					NodeType:    plan.Node_PROJECT,
-					Children:    []int32{nodeID},
-					BindingTags: []int32{newBindingTag},
-					ProjectList: projectList,
-				}, ctx)
-
+				if builder.qry.Nodes[nodeID].ProjectList == nil {
+					builder.qry.Nodes[nodeID].ProjectList = projectList
+				} else {
+					nodeID = builder.appendNode(&plan.Node{
+						NodeType:    plan.Node_PROJECT,
+						Children:    []int32{nodeID},
+						BindingTags: []int32{newBindingTag},
+						ProjectList: projectList,
+					}, ctx)
+				}
 			}
 
 			lockNode = &Node{
@@ -3363,13 +3374,17 @@ func (builder *QueryBuilder) bindSelect(stmt *tree.Select, ctx *BindContext, isR
 		ctx.projects[i] = proj
 	}
 
-	nodeID = builder.appendNode(&plan.Node{
-		NodeType:     plan.Node_PROJECT,
-		ProjectList:  ctx.projects,
-		Children:     []int32{nodeID},
-		BindingTags:  []int32{ctx.projectTag},
-		NotCacheable: notCacheable,
-	}, ctx)
+	if builder.qry.Nodes[nodeID].ProjectList == nil {
+		builder.qry.Nodes[nodeID].ProjectList = ctx.projects
+	} else {
+		nodeID = builder.appendNode(&plan.Node{
+			NodeType:     plan.Node_PROJECT,
+			ProjectList:  ctx.projects,
+			Children:     []int32{nodeID},
+			BindingTags:  []int32{ctx.projectTag},
+			NotCacheable: notCacheable,
+		}, ctx)
+	}
 
 	// append DISTINCT node
 	if ctx.isDistinct {
@@ -3410,13 +3425,17 @@ func (builder *QueryBuilder) bindSelect(stmt *tree.Select, ctx *BindContext, isR
 		}
 
 		ctx.resultTag = builder.genNewTag()
+		if builder.qry.Nodes[nodeID].ProjectList == nil {
+			builder.qry.Nodes[nodeID].ProjectList = ctx.results
+		} else {
+			nodeID = builder.appendNode(&plan.Node{
+				NodeType:    plan.Node_PROJECT,
+				ProjectList: ctx.results,
+				Children:    []int32{nodeID},
+				BindingTags: []int32{ctx.resultTag},
+			}, ctx)
+		}
 
-		nodeID = builder.appendNode(&plan.Node{
-			NodeType:    plan.Node_PROJECT,
-			ProjectList: ctx.results,
-			Children:    []int32{nodeID},
-			BindingTags: []int32{ctx.resultTag},
-		}, ctx)
 	} else {
 		ctx.results = ctx.projects
 	}

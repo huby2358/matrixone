@@ -606,12 +606,16 @@ func initInsertStmt(builder *QueryBuilder, bindCtx *BindContext, stmt *tree.Inse
 	// append ProjectNode
 	projectCtx := NewBindContext(builder, bindCtx)
 	lastTag := builder.genNewTag()
-	info.rootId = builder.appendNode(&plan.Node{
-		NodeType:    plan.Node_PROJECT,
-		ProjectList: projectList,
-		Children:    []int32{info.rootId},
-		BindingTags: []int32{lastTag},
-	}, projectCtx)
+	if lastNode.ProjectList == nil {
+		lastNode.ProjectList = projectList
+	} else {
+		info.rootId = builder.appendNode(&plan.Node{
+			NodeType:    plan.Node_PROJECT,
+			ProjectList: projectList,
+			Children:    []int32{info.rootId},
+			BindingTags: []int32{lastTag},
+		}, projectCtx)
+	}
 
 	info.projectList = make([]*Expr, 0, len(projectList))
 	info.derivedTableId = info.rootId
@@ -775,10 +779,11 @@ func initInsertStmt(builder *QueryBuilder, bindCtx *BindContext, stmt *tree.Inse
 				return false, nil, nil, err
 			}
 			newRootId := builder.appendNode(&plan.Node{
-				NodeType: plan.Node_JOIN,
-				Children: []int32{info.rootId, rightId},
-				JoinType: plan.Node_LEFT,
-				OnList:   []*Expr{joinConds},
+				NodeType:    plan.Node_JOIN,
+				Children:    []int32{info.rootId, rightId},
+				JoinType:    plan.Node_LEFT,
+				OnList:      []*Expr{joinConds},
+				ProjectList: projectList,
 			}, joinCtx)
 			bindCtx.binder = NewTableBinder(builder, bindCtx)
 			info.rootId = newRootId
@@ -787,13 +792,6 @@ func initInsertStmt(builder *QueryBuilder, bindCtx *BindContext, stmt *tree.Inse
 			info.onDuplicateNeedAgg = len(uniqueCols) > 1
 			info.onDuplicateIsIgnore = isIgnore
 
-			// append ProjectNode
-			info.rootId = builder.appendNode(&plan.Node{
-				NodeType:    plan.Node_PROJECT,
-				ProjectList: info.projectList,
-				Children:    []int32{info.rootId},
-				BindingTags: []int32{builder.genNewTag()},
-			}, bindCtx)
 			bindCtx.results = info.projectList
 		}
 	}
@@ -1277,6 +1275,7 @@ func buildValueScan(
 		BindingTags:   []int32{lastTag},
 		Uuid:          nodeId[:],
 		OnUpdateExprs: onUpdateExprs,
+		ProjectList:   projectList,
 	}
 
 	info.rootId = builder.appendNode(scanNode, bindCtx)
@@ -1284,13 +1283,6 @@ func buildValueScan(
 		return err
 	}
 
-	lastTag = builder.genNewTag()
-	info.rootId = builder.appendNode(&plan.Node{
-		NodeType:    plan.Node_PROJECT,
-		ProjectList: projectList,
-		Children:    []int32{info.rootId},
-		BindingTags: []int32{lastTag},
-	}, bindCtx)
 	return nil
 }
 

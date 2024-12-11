@@ -2010,6 +2010,7 @@ func buildSerialFullAndPKColsProjMasterIndex(builder *QueryBuilder, bindCtx *Bin
 		Children:    []int32{currLastNodeId},
 		ProjectList: projectProjection,
 	}
+
 	return projectNode, nil
 }
 
