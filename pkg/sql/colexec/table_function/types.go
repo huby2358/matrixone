@@ -36,7 +36,7 @@ type TableFunction struct {
 	Params   []byte
 	FuncName string
 	Limit    *plan.Expr
-
+	colexec.Projection
 	vm.OperatorBase
 }
 

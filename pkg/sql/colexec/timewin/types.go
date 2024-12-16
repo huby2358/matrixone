@@ -101,6 +101,7 @@ type TimeWin struct {
 	WStart bool
 	WEnd   bool
 
+	colexec.Projection
 	vm.OperatorBase
 }
 

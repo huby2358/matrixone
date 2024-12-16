@@ -21,6 +21,7 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/container/types"
 	"github.com/matrixorigin/matrixone/pkg/container/vector"
 	"github.com/matrixorigin/matrixone/pkg/pb/plan"
+	"github.com/matrixorigin/matrixone/pkg/sql/colexec"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/aggexec"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/group"
 	"github.com/matrixorigin/matrixone/pkg/vm"
@@ -63,6 +64,7 @@ type Window struct {
 	Types []types.Type
 	Aggs  []aggexec.AggFuncExecExpression
 
+	colexec.Projection
 	vm.OperatorBase
 }
 

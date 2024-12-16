@@ -145,6 +145,11 @@ func (external *External) WithEs(es *ExternalParam) *External {
 	return external
 }
 
+func (external *External) WithProjectList(projectList []*plan.Expr) *External {
+	external.ProjectList = projectList
+	return external
+}
+
 func (external *External) Release() {
 	if external != nil {
 		reuse.Free[External](external, nil)

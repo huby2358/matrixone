@@ -55,6 +55,7 @@ type Sample struct {
 	// group by expr1, expr2 ...
 	GroupExprs []*plan.Expr
 
+	colexec.Projection
 	vm.OperatorBase
 }
 

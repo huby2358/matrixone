@@ -17,6 +17,8 @@ package merge
 import (
 	"github.com/matrixorigin/matrixone/pkg/common/reuse"
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
+	"github.com/matrixorigin/matrixone/pkg/sql/colexec"
+	"github.com/matrixorigin/matrixone/pkg/sql/plan"
 	"github.com/matrixorigin/matrixone/pkg/vm"
 
 	"github.com/matrixorigin/matrixone/pkg/vm/process"
@@ -34,6 +36,7 @@ type Merge struct {
 	Partial  bool  // false means listening on all merge receivers
 	StartIDX int32 // if partial, listening on receivers[start:end]
 	EndIDX   int32
+	colexec.Projection
 	vm.OperatorBase
 }
 
@@ -64,6 +67,11 @@ func NewArgument() *Merge {
 
 func (merge *Merge) WithSinkScan(sinkScan bool) *Merge {
 	merge.SinkScan = sinkScan
+	return merge
+}
+
+func (merge *Merge) WithProjectList(projectList []*plan.Expr) *Merge {
+	merge.ProjectList = projectList
 	return merge
 }
 

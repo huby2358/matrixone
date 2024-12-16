@@ -1000,16 +1000,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 		ss = c.compileSort(n, c.compileRestrict(n, ss))
 		return ss, nil
-	case plan.Node_FILTER, plan.Node_PRE_DELETE:
-		ss, err = c.compilePlanScope(step, n.Children[0], ns)
-		if err != nil {
-			return nil, err
-		}
-
-		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileSort(n, c.compileRestrict(n, ss))
-		return ss, nil
-	case plan.Node_PROJECT:
+	case plan.Node_FILTER, plan.Node_PRE_DELETE, plan.Node_PROJECT:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
 		if err != nil {
 			return nil, err
@@ -1096,7 +1087,7 @@ func (c *Compile) compilePlanScope(step int32, curNodeIdx int32, ns []*plan.Node
 		}
 
 		c.setAnalyzeCurrent(ss, int(curNodeIdx))
-		ss = c.compileRestrict(n, c.compileSort(n, ss))
+		ss = c.compileProjection(n, c.compileRestrict(n, c.compileSort(n, ss)))
 		return ss, nil
 	case plan.Node_PARTITION:
 		ss, err = c.compilePlanScope(step, n.Children[0], ns)
@@ -2827,6 +2818,7 @@ func (c *Compile) compileSample(n *plan.Node, ss []*Scope) []*Scope {
 	isSingle := c.IsSingleScope(ss)
 	for i := range ss {
 		op := constructSample(n, !isSingle)
+		op.ProjectList = n.ProjectList
 		op.SetAnalyzeControl(c.anal.curNodeIdx, currentFirstFlag)
 		ss[i].setRootOperator(op)
 	}
@@ -3376,7 +3368,7 @@ func (c *Compile) compileSinkScanNode(n *plan.Node, curNodeIdx int32) ([]*Scope,
 	rs.Proc = c.proc.NewNoContextChildProc(1)
 
 	currentFirstFlag := c.anal.isFirst
-	mergeArg := merge.NewArgument().WithSinkScan(true)
+	mergeArg := merge.NewArgument().WithSinkScan(true).WithProjectList(n.ProjectList)
 	c.hasMergeOp = true
 	mergeArg.SetAnalyzeControl(c.anal.curNodeIdx, currentFirstFlag)
 	rs.setRootOperator(mergeArg)

@@ -76,6 +76,11 @@ func (tableScan *TableScan) WithTypes(types []plan.Type) *TableScan {
 	return tableScan
 }
 
+func (tableScan *TableScan) WithProjectList(projectList []*plan.Expr) *TableScan {
+	tableScan.ProjectList = projectList
+	return tableScan
+}
+
 func (tableScan *TableScan) Release() {
 	if tableScan != nil {
 		reuse.Free[TableScan](tableScan, nil)

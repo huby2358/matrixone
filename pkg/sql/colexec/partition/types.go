@@ -37,7 +37,7 @@ type Partition struct {
 	ctr container
 
 	OrderBySpecs []*plan.OrderBySpec
-
+	colexec.Projection
 	vm.OperatorBase
 }
 

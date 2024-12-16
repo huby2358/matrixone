@@ -886,7 +886,7 @@ func constructExternal(n *plan.Node, param *tree.ExternParam, ctx context.Contex
 				},
 			},
 		},
-	)
+	).WithProjectList(n.ProjectList)
 }
 
 func constructStream(n *plan.Node, p [2]int64) *source.Source {
@@ -894,6 +894,7 @@ func constructStream(n *plan.Node, p [2]int64) *source.Source {
 	arg.TblDef = n.TableDef
 	arg.Offset = p[0]
 	arg.Limit = p[1]
+	arg.ProjectList = n.ProjectList
 	return arg
 }
 
@@ -909,6 +910,7 @@ func constructTableFunction(n *plan.Node) *table_function.TableFunction {
 	arg.FuncName = n.TableDef.TblFunc.Name
 	arg.Params = n.TableDef.TblFunc.Param
 	arg.Limit = n.Limit
+	arg.ProjectList = n.ProjectList
 	return arg
 }
 
@@ -1228,6 +1230,7 @@ func constructFill(n *plan.Node) *fill.Fill {
 	arg.FillType = n.FillType
 	arg.FillVal = n.FillVal
 	arg.AggIds = aggIdx
+	arg.ProjectList = n.ProjectList
 	return arg
 }
 
@@ -1272,6 +1275,7 @@ func constructTimeWindow(_ context.Context, n *plan.Node, proc *process.Process)
 	arg.WEnd = wEnd
 	arg.EndExpr = n.WEnd
 	arg.TsType = n.Timestamp.Typ
+	arg.ProjectList = n.ProjectList
 	return arg
 }
 
@@ -1317,6 +1321,7 @@ func constructWindow(_ context.Context, n *plan.Node, proc *process.Process) *wi
 	arg.Types = typs
 	arg.Aggs = aggregationExpressions
 	arg.WinSpecList = n.WinSpecList
+	arg.ProjectList = n.ProjectList
 	return arg
 }
 
@@ -1578,6 +1583,7 @@ func constructMergeOrder(n *plan.Node) *mergeorder.MergeOrder {
 func constructPartition(n *plan.Node) *partition.Partition {
 	arg := partition.NewArgument()
 	arg.OrderBySpecs = n.OrderBy
+	arg.ProjectList = n.ProjectList
 	return arg
 }
 
@@ -2044,7 +2050,7 @@ func constructTableScan(n *plan.Node) *table_scan.TableScan {
 	for j, col := range n.TableDef.Cols {
 		types[j] = col.Typ
 	}
-	return table_scan.NewArgument().WithTypes(types)
+	return table_scan.NewArgument().WithTypes(types).WithProjectList(n.ProjectList)
 }
 
 func constructValueScan(proc *process.Process, n *plan.Node) (*value_scan.ValueScan, error) {
@@ -2057,6 +2063,7 @@ func constructValueScan(proc *process.Process, n *plan.Node) (*value_scan.ValueS
 		return op, nil
 	}
 
+	op.ProjectList = n.ProjectList
 	op.ColCount = len(n.TableDef.Cols)
 	op.Batchs = make([]*batch.Batch, 2)
 	op.Batchs[0] = batch.NewWithSize(len(n.RowsetData.Cols))
