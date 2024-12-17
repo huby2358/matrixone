@@ -68,7 +68,7 @@ func (builder *QueryBuilder) canSkipDedup(tableDef *plan.TableDef) bool {
 		return true
 	}
 
-	if builder.qry.LoadTag || builder.isRestore {
+	if builder.isRestore {
 		return true
 	}
 
