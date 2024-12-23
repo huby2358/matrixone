@@ -475,9 +475,9 @@ func (c *Compile) printPipeline() {
 // 2. init data source.
 func (c *Compile) prePipelineInitializer() (err error) {
 	// do table lock.
-	if err = c.lockMeta.doLock(c.e, c.proc); err != nil {
+	/* 	if err = c.lockMeta.doLock(c.e, c.proc); err != nil {
 		return err
-	}
+	} */
 	if err = c.lockTable(); err != nil {
 		return err
 	}
