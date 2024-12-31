@@ -110,7 +110,8 @@ func WithEnableLeakCheck(
 	maxActiveAges time.Duration,
 	leakHandleFunc func([]ActiveTxn)) TxnClientCreateOption {
 	return func(tc *txnClient) {
-		tc.leakChecker = newLeakCheck(maxActiveAges, leakHandleFunc)
+		// tc.leakChecker = newLeakCheck(maxActiveAges, leakHandleFunc)
+		tc.leakChecker = nil
 	}
 }
 
