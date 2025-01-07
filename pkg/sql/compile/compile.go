@@ -1653,6 +1653,7 @@ func (c *Compile) compileExternScanParallelReadWrite(n *plan.Node, param *tree.E
 	}
 
 	var mcpu int
+	var currentCnId int
 	var ID2Addr map[int]int = make(map[int]int, 0)
 
 	if param.ScanType == tree.S3 {
@@ -1664,12 +1665,18 @@ func (c *Compile) compileExternScanParallelReadWrite(n *plan.Node, param *tree.E
 				mcpu += c.cnList[i].Mcpu
 			}
 			ID2Addr[i] = mcpu - tmp
+			if c.cnList[i].Addr == c.addr {
+				currentCnId = i
+			}
 		}
 	} else {
 		for i := 0; i < len(c.cnList); i++ {
 			tmp := mcpu
 			mcpu += c.cnList[i].Mcpu
 			ID2Addr[i] = mcpu - tmp
+			if c.cnList[i].Addr == c.addr {
+				currentCnId = i
+			}
 		}
 	}
 
@@ -1688,11 +1695,23 @@ func (c *Compile) compileExternScanParallelReadWrite(n *plan.Node, param *tree.E
 	var ss []*Scope
 	pre := 0
 	currentFirstFlag := c.anal.isFirst
+
 	for i := 0; i < len(c.cnList); i++ {
-		scope := c.constructScopeForExternal(c.cnList[i].Addr, param.Parallel)
+		var cnId int // first time constructScopeForExternal for current cn, and next for other cns
+		if i == 0 {
+			cnId = currentCnId
+		} else {
+			if i == currentCnId {
+				continue
+			} else {
+				cnId = i
+			}
+		}
+		count := min(parallelSize, ID2Addr[cnId])
+		scope := c.constructScopeForExternal(c.cnList[cnId].Addr, param.Parallel)
 		ss = append(ss, scope)
 		scope.IsLoad = true
-		count := min(parallelSize, ID2Addr[i])
+
 		scope.NodeInfo.Mcpu = count
 		fileOffsetTmp := make([]*pipeline.FileOffset, len(fileList))
 		for j := range fileOffsetTmp {
