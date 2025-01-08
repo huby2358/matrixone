@@ -16,6 +16,7 @@ package shufflebuild
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/matrixorigin/matrixone/pkg/vm"
 	"github.com/matrixorigin/matrixone/pkg/vm/message"
@@ -60,6 +61,7 @@ func (shuffleBuild *ShuffleBuild) Call(proc *process.Process) (vm.CallResult, er
 		switch ctr.state {
 		case ReceiveBatch:
 			err := ctr.collectBuildBatches(ap, proc, analyzer)
+			fmt.Println("666666 ctr.hashmapBuilder.InputBatchRowCount is  ", ctr.hashmapBuilder.InputBatchRowCount)
 			if err != nil {
 				return result, err
 			}
@@ -116,6 +118,7 @@ func (ctr *container) collectBuildBatches(shuffleBuild *ShuffleBuild, proc *proc
 		}
 
 		analyzer.Alloc(int64(result.Batch.Size()))
+		fmt.Println("666666 analyzer.Alloc is   ", int64(result.Batch.Size()))
 		ctr.hashmapBuilder.InputBatchRowCount += result.Batch.RowCount()
 		err = ctr.hashmapBuilder.Batches.CopyIntoBatches(result.Batch, proc)
 		if err != nil {
