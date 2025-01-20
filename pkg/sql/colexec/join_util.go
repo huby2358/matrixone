@@ -99,6 +99,7 @@ func (bs *Batches) CopyIntoBatches(src *batch.Batch, proc *process.Process) (err
 			if len(bs.Buf) > 1 {
 				preAllocSize = DefaultBatchSize
 			}
+			fmt.Println("666666 src preAllocSize ", preAllocSize)
 			tmp, err = proc.NewBatchFromSrc(src, preAllocSize)
 			if err != nil {
 				return err
