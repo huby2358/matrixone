@@ -150,6 +150,7 @@ func (proc *Process) NewBatchFromSrc(src *batch.Batch, preAllocSize int) (*batch
 		if v.Capacity() < preAllocSize {
 			err := v.PreExtend(preAllocSize, proc.Mp())
 			if err != nil {
+				bat.Clean(proc.GetMPool())
 				return nil, err
 			}
 		}
