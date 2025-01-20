@@ -101,7 +101,8 @@ func (hashBuild *HashBuild) Reset(proc *process.Process, pipelineFailed bool, er
 	message.FinalizeJoinMapMessage(proc.GetMessageBoard(), hashBuild.JoinMapTag, false, 0, mapSucceed)
 }
 func (hashBuild *HashBuild) Free(proc *process.Process, pipelineFailed bool, err error) {
-	hashBuild.ctr.hashmapBuilder.Free(proc)
+	mapSucceed := hashBuild.ctr.state == SendSucceed
+	hashBuild.ctr.hashmapBuilder.Free(proc, mapSucceed)
 }
 
 func (hashBuild *HashBuild) ExecProjection(proc *process.Process, input *batch.Batch) (*batch.Batch, error) {

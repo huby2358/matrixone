@@ -99,7 +99,8 @@ func (shuffleBuild *ShuffleBuild) Reset(proc *process.Process, pipelineFailed bo
 }
 
 func (shuffleBuild *ShuffleBuild) Free(proc *process.Process, pipelineFailed bool, err error) {
-	shuffleBuild.ctr.hashmapBuilder.Free(proc)
+	mapSucceed := shuffleBuild.ctr.state == SendSucceed
+	shuffleBuild.ctr.hashmapBuilder.Free(proc, !mapSucceed)
 }
 
 func (shuffleBuild *ShuffleBuild) ExecProjection(proc *process.Process, input *batch.Batch) (*batch.Batch, error) {

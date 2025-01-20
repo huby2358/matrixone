@@ -138,10 +138,13 @@ func (hb *HashmapBuilder) Reset(proc *process.Process, hashTableHasNotSent bool)
 	}
 }
 
-func (hb *HashmapBuilder) Free(proc *process.Process) {
+func (hb *HashmapBuilder) Free(proc *process.Process, hashTableHasNotSent bool) {
 	hb.needDupVec = false
-	hb.Batches.Clean(proc.GetMPool())
-	// hb.Batches.Reset()
+	if hashTableHasNotSent {
+		hb.Batches.Clean(proc.GetMPool())
+	} else {
+		hb.Batches.Reset()
+	}
 	hb.IntHashMap = nil
 	hb.StrHashMap = nil
 	hb.MultiSels.Free()
