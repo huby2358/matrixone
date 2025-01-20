@@ -148,6 +148,9 @@ func (proc *Process) NewBatchFromSrc(src *batch.Batch, preAllocSize int) (*batch
 	for i := range bat.Vecs {
 		v := vector.NewOffHeapVecWithType(*src.Vecs[i].GetType())
 		if v.Capacity() < preAllocSize {
+			sz := v.GetType().TypeSize()
+			tempsize := (v.Length() + preAllocSize) * sz
+			fmt.Println("666666  PreExtend size is ", tempsize)
 			err := v.PreExtend(preAllocSize, proc.Mp())
 			if err != nil {
 				bat.Clean(proc.GetMPool())

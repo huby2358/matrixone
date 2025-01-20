@@ -140,8 +140,8 @@ func (hb *HashmapBuilder) Reset(proc *process.Process, hashTableHasNotSent bool)
 
 func (hb *HashmapBuilder) Free(proc *process.Process) {
 	hb.needDupVec = false
-	// hb.Batches.Clean(proc.GetMPool())
-	hb.Batches.Reset()
+	hb.Batches.Clean(proc.GetMPool())
+	// hb.Batches.Reset()
 	hb.IntHashMap = nil
 	hb.StrHashMap = nil
 	hb.MultiSels.Free()
