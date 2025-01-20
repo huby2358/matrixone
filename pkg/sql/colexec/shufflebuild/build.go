@@ -120,6 +120,7 @@ func (ctr *container) collectBuildBatches(shuffleBuild *ShuffleBuild, proc *proc
 		analyzer.Alloc(int64(result.Batch.Size()))
 		fmt.Println("666666 analyzer.Alloc is   ", int64(result.Batch.Size()))
 		ctr.hashmapBuilder.InputBatchRowCount += result.Batch.RowCount()
+		fmt.Println("666666 InputBatchRowCount   ", ctr.hashmapBuilder.InputBatchRowCount)
 		err = ctr.hashmapBuilder.Batches.CopyIntoBatches(result.Batch, proc)
 		if err != nil {
 			return err
