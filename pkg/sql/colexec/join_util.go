@@ -15,8 +15,6 @@
 package colexec
 
 import (
-	"fmt"
-
 	"github.com/matrixorigin/matrixone/pkg/common/bitmap"
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
 	"github.com/matrixorigin/matrixone/pkg/common/mpool"
@@ -88,7 +86,6 @@ func (bs *Batches) CopyIntoBatches(src *batch.Batch, proc *process.Process) (err
 	offset := 0
 	appendRows := 0
 	length := src.RowCount()
-	fmt.Println("666666 src length is ", length)
 
 	for offset < length {
 		lenBuf := len(bs.Buf)
@@ -99,7 +96,6 @@ func (bs *Batches) CopyIntoBatches(src *batch.Batch, proc *process.Process) (err
 			if len(bs.Buf) > 1 {
 				preAllocSize = DefaultBatchSize
 			}
-			fmt.Println("666666 src preAllocSize ", preAllocSize)
 			tmp, err = proc.NewBatchFromSrc(src, preAllocSize)
 			if err != nil {
 				return err
