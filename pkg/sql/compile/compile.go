@@ -3257,7 +3257,7 @@ func (c *Compile) compileMultiUpdate(_ []*plan.Node, n *plan.Node, ss []*Scope) 
 
 	currentFirstFlag := c.anal.isFirst
 	if toWriteS3 {
-		if len(ss) == 1 && ss[0].NodeInfo.Mcpu == 1 {
+		/* 		if len(ss) == 1 && ss[0].NodeInfo.Mcpu == 1 {
 			mcpu := c.getParallelSizeForExternalScan(n, c.ncpu)
 			if mcpu > 1 {
 				oldScope := ss[0]
@@ -3278,7 +3278,7 @@ func (c *Compile) compileMultiUpdate(_ []*plan.Node, n *plan.Node, ss []*Scope) 
 
 				ss[0].PreScopes = append(ss[0].PreScopes, oldScope)
 			}
-		}
+		} */
 
 		for i := range ss {
 			multiUpdateArg := constructMultiUpdate(n, c.e, ss[i].IsRemote)
